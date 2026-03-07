@@ -1,8 +1,10 @@
 <script lang="ts">
     import { gameState } from "../lib/game.svelte";
     import CameraCapture from "./CameraCapture.svelte";
-    import { CheckCircle, Play } from "lucide-svelte";
+    import { CheckCircle, Play, RefreshCw } from "lucide-svelte";
     import type { GameItem } from "../lib/types";
+
+    let changeWordCount = $state(0);
 
     let me = $derived(gameState.me);
     let game = $derived(gameState.game);
@@ -84,8 +86,24 @@
                 <span class="badge">Turno {game?.current_turn}</span>
                 {#if previousItem?.type === "word"}
                     <div class="prompt-text">
-                        <h3>Dibuja esto:</h3>
+                        <p class="text-muted" style="margin-bottom: 0.5rem;">
+                            Dibuja esto:
+                        </p>
                         <p class="word-to-draw">"{previousItem.content}"</p>
+                        {#if game?.current_turn === 1 && changeWordCount < 2}
+                            <button
+                                class="secondary mt-2"
+                                onclick={() => {
+                                    changeWordCount++;
+                                    gameState.changeInitialWord(
+                                        previousItem!.id,
+                                    );
+                                }}
+                            >
+                                <RefreshCw size={16} class="inline-icon" /> Cambiar
+                                palabra ({2 - changeWordCount} restantes)
+                            </button>
+                        {/if}
                     </div>
                 {:else if previousItem?.type === "drawing"}
                     <div class="prompt-image">

@@ -2,6 +2,8 @@ import { supabase } from "./supabase";
 import type { Game, Player, GameItem } from "./types";
 import { RealtimeChannel } from "@supabase/supabase-js";
 
+export const secretWords = ["Un perro volador", "Alien comiendo pizza", "Un dinosaurio en monopatín", "Gato astronauta", "Robot triste", "Fantasma asustado", "Helado derretido al sol", "Tiburón nadando en café", "Pájaro con gafas de sol", "Coche de caballos espacial"];
+
 export class GameState {
     game = $state<Game | null>(null);
     me = $state<Player | null>(null);
@@ -171,8 +173,6 @@ export class GameState {
             this.players = orderedPlayers.map((p, i) => ({ ...p, order_index: i }));
             await this.updatePlayersOrder(this.players);
 
-            const secretWords = ["Un perro volador", "Alien comiendo pizza", "Un dinosaurio en monopatín", "Gato astronauta", "Robot triste", "Fantasma asustado", "Helado derretido al sol", "Tiburón nadando en café", "Pájaro con gafas de sol", "Coche de caballos espacial"];
-
             const initialItems: any[] = [];
 
             for (let i = 0; i < N; i++) {
@@ -252,6 +252,14 @@ export class GameState {
                 presentation_step_index: stepIndex
             })
             .eq('id', this.game.id);
+    }
+
+    async changeInitialWord(itemId: string) {
+        if (!this.game) return;
+        const randomWord = secretWords[Math.floor(Math.random() * secretWords.length)];
+        await supabase.from('interferencias_items')
+            .update({ content: randomWord })
+            .eq('id', itemId);
     }
 
     subscribe() {
