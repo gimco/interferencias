@@ -9,6 +9,11 @@
 
     onMount(() => {
         isAdminRoute = window.location.pathname === "/admin";
+        const params = new URLSearchParams(window.location.search);
+        const urlCode = params.get("c") || params.get("code");
+        if (urlCode) {
+            gameIdToJoin = urlCode;
+        }
     });
 
     async function handleCreate() {

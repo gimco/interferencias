@@ -1,5 +1,6 @@
 <script lang="ts">
     import { gameState } from "../lib/game.svelte";
+    import QRCode from "qrcode";
     import {
         RefreshCw,
         ArrowUp,
@@ -7,7 +8,31 @@
         Play,
         Trash2,
         XCircle,
+        QrCode,
+        X,
     } from "lucide-svelte";
+
+    let qrCodeDataURL = $state<string | null>(null);
+
+    async function showQRCode() {
+        try {
+            const joinUrl = `${window.location.origin}/?c=${gameState.game?.code}`;
+            qrCodeDataURL = await QRCode.toDataURL(joinUrl, {
+                width: 300,
+                margin: 2,
+                color: {
+                    dark: "#0f766e", // teal-700
+                    light: "#ffffff",
+                },
+            });
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function closeQRCode() {
+        qrCodeDataURL = null;
+    }
 
     let players = $derived(
         [...gameState.players].sort(
@@ -62,11 +87,20 @@
 
 <div class="panel">
     <div class="header">
-        <div>
+        <div class="header-info">
             <h2>Sala de Espera</h2>
             <p class="subtitle">Código de Partida:</p>
-            <div class="code-box">
-                <code>{gameState.game?.code}</code>
+            <div class="code-box-wrapper">
+                <div class="code-box">
+                    <code>{gameState.game?.code}</code>
+                </div>
+                <button
+                    class="icon-btn qr-btn"
+                    onclick={showQRCode}
+                    title="Mostrar código QR"
+                >
+                    <QrCode size={24} />
+                </button>
             </div>
         </div>
         {#if is_admin}
@@ -131,14 +165,61 @@
     </div>
 </div>
 
+{#if qrCodeDataURL}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="modal-backdrop" onclick={closeQRCode}>
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="modal-content" onclick={(e) => e.stopPropagation()}>
+            <button class="icon-btn close-modal" onclick={closeQRCode}>
+                <X size={24} />
+            </button>
+            <h3>Escanea para unirte</h3>
+            <img
+                src={qrCodeDataURL}
+                alt="Código QR para unirse"
+                class="qr-img"
+            />
+            <p class="text-muted mt-2">
+                Apunta con la cámara de tu móvil para entrar a la sala
+                fácilmente.
+            </p>
+        </div>
+    </div>
+{/if}
+
 <style>
     .header {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        flex-direction: column;
+        gap: 1.5rem;
         border-bottom: 1px solid var(--surface-hover);
-        padding-bottom: 1rem;
+        padding-bottom: 1.5rem;
         margin-bottom: 1rem;
+    }
+    @media (min-width: 600px) {
+        .header {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+    }
+    .header-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    @media (min-width: 600px) {
+        .header-info {
+            align-items: flex-start;
+        }
+    }
+    .code-box-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
     }
     .code-box {
         background: rgba(0, 0, 0, 0.3);
@@ -152,17 +233,31 @@
     .header-actions {
         display: flex;
         gap: 0.5rem;
+        width: 100%;
     }
     .action-btn {
+        flex: 1;
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 0.5rem;
-        font-size: 1.25rem;
-        padding: 1rem 2rem;
+        font-size: 1.125rem;
+        padding: 0.75rem 1rem;
+    }
+    @media (min-width: 600px) {
+        .header-actions {
+            width: auto;
+        }
+        .action-btn {
+            flex: initial;
+            font-size: 1.25rem;
+            padding: 1rem 2rem;
+        }
     }
     .cancel-btn {
         padding: 1rem 1.25rem;
         color: var(--accent);
+        flex: none;
     }
     .cancel-btn:hover {
         background: rgba(244, 63, 94, 0.1);
@@ -198,5 +293,55 @@
     .controls {
         display: flex;
         gap: 0.25rem;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        padding: 1rem;
+    }
+    .modal-content {
+        background: var(--surface);
+        padding: 2.5rem 1.5rem;
+        border-radius: 12px;
+        position: relative;
+        text-align: center;
+        max-width: 90vw;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+    .close-modal {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+    }
+    .qr-img {
+        width: 250px;
+        height: 250px;
+        max-width: 100%;
+        border-radius: 8px;
+        margin: 1.5rem auto;
+        display: block;
+    }
+    .qr-btn {
+        background: var(--surface-hover);
+        padding: 0.5rem;
+        border-radius: 8px;
+    }
+    .qr-btn:hover {
+        background: var(--primary);
+        color: white;
+    }
+    .text-muted {
+        color: var(--text-muted);
+        font-size: 0.875rem;
     }
 </style>
