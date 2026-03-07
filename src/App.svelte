@@ -5,8 +5,14 @@
   import Lobby from "./components/Lobby.svelte";
   import GameUI from "./components/GameUI.svelte";
   import Results from "./components/Results.svelte";
+  import RandomWord from "./components/RandomWord.svelte";
+
+  let isWordRoute = $state(false);
 
   onMount(() => {
+    isWordRoute = window.location.pathname === "/palabra";
+    if (isWordRoute) return;
+
     // Try to reconnect
     const gameId = localStorage.getItem("interferencias_game_id");
     const playerId = localStorage.getItem("interferencias_player_id");
@@ -17,7 +23,9 @@
 </script>
 
 <main class="app-container">
-  {#if gameState.isLoading}
+  {#if isWordRoute}
+    <RandomWord />
+  {:else if gameState.isLoading}
     <div
       class="panel center-content"
       style="align-items: center; justify-content: center"
