@@ -1,8 +1,7 @@
 import { supabase } from "./supabase";
 import type { Game, Player, GameItem } from "./types";
 import { RealtimeChannel } from "@supabase/supabase-js";
-
-export const secretWords = ["Un perro volador", "Alien comiendo pizza", "Un dinosaurio en monopatín", "Gato astronauta", "Robot triste", "Fantasma asustado", "Helado derretido al sol", "Tiburón nadando en café", "Pájaro con gafas de sol", "Coche de caballos espacial"];
+import { secretWords } from "./words";
 
 export class GameState {
     game = $state<Game | null>(null);
