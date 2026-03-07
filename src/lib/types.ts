@@ -2,6 +2,7 @@ export type GameStatus = "waiting" | "playing" | "finished";
 
 export interface Game {
     id: string;
+    code: string;
     created_at: string;
     status: GameStatus;
     current_turn: number;

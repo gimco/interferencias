@@ -3,6 +3,13 @@
 
     let name = $state("");
     let gameIdToJoin = $state("");
+    let isAdminRoute = $state(false);
+
+    import { onMount } from "svelte";
+
+    onMount(() => {
+        isAdminRoute = window.location.pathname === "/admin";
+    });
 
     async function handleCreate() {
         if (!name.trim()) return;
@@ -29,33 +36,46 @@
         />
     </div>
 
-    <div class="actions">
-        <button class="primary" onclick={handleCreate} disabled={!name.trim()}>
-            Crear Nueva Partida
-        </button>
-    </div>
+    {#if isAdminRoute}
+        <div class="actions">
+            <button
+                class="primary"
+                onclick={handleCreate}
+                disabled={!name.trim()}
+            >
+                Crear Nueva Partida
+            </button>
+        </div>
 
-    <div class="divider"><span>O Únete a una</span></div>
-
-    <div class="form-group">
-        <label for="gameId">Código de la Partida</label>
-        <input
-            id="gameId"
-            type="text"
-            bind:value={gameIdToJoin}
-            placeholder="ej. 1234-abcd..."
-        />
-    </div>
-
-    <div class="actions">
-        <button
-            class="secondary"
-            onclick={handleJoin}
-            disabled={!name.trim() || !gameIdToJoin.trim()}
+        <div class="divider"><span>Compartir link para unirse</span></div>
+        <p
+            class="text-xs text-center"
+            style="color: var(--text-muted); padding-bottom: 1rem"
         >
-            Unirse
-        </button>
-    </div>
+            Los jugadores deben entrar a la ruta principal para unirse.
+        </p>
+    {:else}
+        <div class="form-group">
+            <label for="gameId">Código de la Partida</label>
+            <input
+                id="gameId"
+                type="text"
+                bind:value={gameIdToJoin}
+                placeholder="ej. 1234"
+                maxlength="4"
+            />
+        </div>
+
+        <div class="actions">
+            <button
+                class="secondary"
+                onclick={handleJoin}
+                disabled={!name.trim() || !gameIdToJoin.trim()}
+            >
+                Unirse
+            </button>
+        </div>
+    {/if}
 
     {#if gameState.error}
         <div class="error">{gameState.error}</div>

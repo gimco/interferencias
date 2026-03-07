@@ -17,9 +17,10 @@ export class GameState {
         this.isLoading = true;
         this.error = null;
         try {
+            const shortCode = Math.floor(1000 + Math.random() * 9000).toString();
             const { data: game, error: gameError } = await supabase
                 .from('interferencias_games')
-                .insert({ status: 'waiting', current_turn: 0 })
+                .insert({ status: 'waiting', current_turn: 0, code: shortCode })
                 .select('*')
                 .single();
 
@@ -51,14 +52,14 @@ export class GameState {
         }
     }
 
-    async joinGame(gameId: string, playerName: string) {
+    async joinGame(gameCode: string, playerName: string) {
         this.isLoading = true;
         this.error = null;
         try {
             const { data: game, error: gameError } = await supabase
                 .from('interferencias_games')
                 .select('*')
-                .eq('id', gameId)
+                .eq('code', gameCode)
                 .single();
 
             if (gameError || !game) throw new Error("Partida no encontrada");
@@ -145,6 +146,17 @@ export class GameState {
             await supabase.from('interferencias_players')
                 .update({ order_index: i })
                 .eq('id', newPlayers[i].id);
+        }
+    }
+
+    async kickPlayer(playerId: string) {
+        if (!this.me?.is_admin || !this.game) return;
+
+        try {
+            await supabase.from('interferencias_players').delete().eq('id', playerId);
+            this.players = this.players.filter(p => p.id !== playerId);
+        } catch (e) {
+            console.error(e);
         }
     }
 

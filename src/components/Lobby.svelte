@@ -1,6 +1,6 @@
 <script lang="ts">
     import { gameState } from "../lib/game.svelte";
-    import { RefreshCw, ArrowUp, ArrowDown, Play } from "lucide-svelte";
+    import { RefreshCw, ArrowUp, ArrowDown, Play, Trash2 } from "lucide-svelte";
 
     let players = $derived(
         [...gameState.players].sort(
@@ -28,6 +28,12 @@
         gameState.updatePlayersOrder(newPlayers);
     }
 
+    function kick(player: any) {
+        if (confirm(`¿Expulsar a ${player.name}?`)) {
+            gameState.kickPlayer(player.id);
+        }
+    }
+
     function handleStart() {
         if (players.length < 2) {
             alert("Se necesitan al menos 2 jugadores.");
@@ -43,7 +49,7 @@
             <h2>Sala de Espera</h2>
             <p class="subtitle">Código de Partida:</p>
             <div class="code-box">
-                <code>{gameState.game?.id}</code>
+                <code>{gameState.game?.code}</code>
             </div>
         </div>
         {#if is_admin}
@@ -75,9 +81,19 @@
                                 class="icon-btn"
                                 disabled={i === players.length - 1}
                                 onclick={() => moveDown(i)}
+                                title="Bajar"
                             >
                                 <ArrowDown size={16} />
                             </button>
+                            {#if player.id !== me?.id}
+                                <button
+                                    class="icon-btn danger"
+                                    onclick={() => kick(player)}
+                                    title="Expulsar"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            {/if}
                         </div>
                     {/if}
                 </li>
@@ -134,6 +150,10 @@
     .icon-btn:hover:not(:disabled) {
         background: var(--surface-hover);
         color: var(--primary);
+    }
+    .icon-btn.danger:hover:not(:disabled) {
+        color: var(--accent);
+        background: rgba(244, 63, 94, 0.1);
     }
     .controls {
         display: flex;

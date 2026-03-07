@@ -1,6 +1,6 @@
 <script lang="ts">
     import { gameState } from "../lib/game.svelte";
-    import Canvas from "./Canvas.svelte";
+    import CameraCapture from "./CameraCapture.svelte";
     import { CheckCircle, Play } from "lucide-svelte";
     import type { GameItem } from "../lib/types";
 
@@ -101,7 +101,7 @@
 
             <div class="action-area">
                 {#if myCurrentItem.type === "drawing"}
-                    <Canvas onSubmit={submitDrawing} />
+                    <CameraCapture onSubmit={submitDrawing} />
                 {:else}
                     <div class="writing-task">
                         <input
