@@ -130,6 +130,7 @@
         flex: 1;
         width: 100%;
         height: 100%;
+        overflow: hidden;
     }
     .center {
         justify-content: center;
@@ -158,13 +159,14 @@
     .task-panel {
         display: flex;
         flex-direction: column;
-        /* Default portrait stacking */
+        flex: 1;
+        overflow: hidden;
     }
     /* Landscape specific alignment */
     @media (orientation: landscape) {
         .task-panel {
             flex-direction: row;
-            gap: 2rem;
+            gap: 1.5rem;
         }
         .context {
             flex: 0 0 35%;
@@ -173,12 +175,14 @@
             justify-content: center;
             border-right: 1px solid var(--surface-hover);
             padding-right: 1rem;
+            overflow-y: auto;
         }
         .action-area {
             flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            overflow: hidden;
         }
     }
 
@@ -206,7 +210,8 @@
         max-width: 100%;
         max-height: 40vh;
         border-radius: 8px;
-        background: white; /* drawings have white background */
+        background: white;
+        object-fit: contain;
     }
     .writing-task {
         display: flex;
