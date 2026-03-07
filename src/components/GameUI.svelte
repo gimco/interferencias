@@ -1,0 +1,239 @@
+<script lang="ts">
+    import { gameState } from "../lib/game.svelte";
+    import Canvas from "./Canvas.svelte";
+    import { CheckCircle, Play } from "lucide-svelte";
+    import type { GameItem } from "../lib/types";
+
+    let me = $derived(gameState.me);
+    let game = $derived(gameState.game);
+    let items = $derived(gameState.items);
+    let players = $derived(gameState.players);
+
+    let myCurrentItem: GameItem | undefined = $derived(
+        items.find(
+            (i) => i.turn === game?.current_turn && i.player_id === me?.id,
+        ),
+    );
+
+    let previousItem: GameItem | undefined = $derived(
+        myCurrentItem
+            ? items.find(
+                  (i) =>
+                      i.chain_index === myCurrentItem!.chain_index &&
+                      i.turn === game!.current_turn - 1,
+              )
+            : undefined,
+    );
+
+    let completedCount = $derived(
+        items.filter((i) => i.turn === game?.current_turn && i.completed)
+            .length,
+    );
+
+    let isAllCompleted = $derived(completedCount === players.length);
+
+    let inputValue = $state("");
+
+    function submitWord() {
+        if (!inputValue.trim() || !myCurrentItem) return;
+        gameState.submitTurn(myCurrentItem.id, inputValue);
+    }
+
+    function submitDrawing(dataUrl: string) {
+        if (!myCurrentItem) return;
+        gameState.submitTurn(myCurrentItem.id, dataUrl);
+    }
+</script>
+
+<div class="game-container">
+    {#if !myCurrentItem}
+        <div class="panel center">
+            <h2>Buscando tu turno...</h2>
+        </div>
+    {:else if myCurrentItem.completed}
+        <div class="panel center waiting-panel">
+            <h2>¡Tarea completada!</h2>
+            <div class="progress-info">
+                <CheckCircle size={48} color="var(--secondary)" />
+                <p>Esperando a los demás...</p>
+                <div class="counter">
+                    <strong>{completedCount}</strong> / {players.length} terminados
+                </div>
+            </div>
+
+            {#if me?.is_admin}
+                <div class="admin-controls mt-4">
+                    <button
+                        class="primary"
+                        disabled={!isAllCompleted}
+                        onclick={() => gameState.nextTurn()}
+                    >
+                        <Play size={20} class="inline-icon" />
+                        {#if isAllCompleted}Siguiente Turno{:else}Forzar
+                            Siguiente Turno{/if}
+                    </button>
+                    {#if !isAllCompleted}
+                        <p class="hint">Aún no han terminado todos</p>
+                    {/if}
+                </div>
+            {/if}
+        </div>
+    {:else}
+        <div class="panel task-panel">
+            <div class="context">
+                <span class="badge">Turno {game?.current_turn}</span>
+                {#if previousItem?.type === "word"}
+                    <div class="prompt-text">
+                        <h3>Dibuja esto:</h3>
+                        <p class="word-to-draw">"{previousItem.content}"</p>
+                    </div>
+                {:else if previousItem?.type === "drawing"}
+                    <div class="prompt-image">
+                        <h3>¿Qué ves aquí?</h3>
+                        <img
+                            src={previousItem.content}
+                            alt="Dibujo previo"
+                            class="prev-drawing"
+                        />
+                    </div>
+                {/if}
+            </div>
+
+            <div class="action-area">
+                {#if myCurrentItem.type === "drawing"}
+                    <Canvas onSubmit={submitDrawing} />
+                {:else}
+                    <div class="writing-task">
+                        <input
+                            type="text"
+                            bind:value={inputValue}
+                            placeholder="Escribe lo que representa el dibujo..."
+                            class="huge-input"
+                        />
+                        <button
+                            class="primary send-btn"
+                            onclick={submitWord}
+                            disabled={!inputValue.trim()}
+                        >
+                            <CheckCircle size={24} /> Terminar
+                        </button>
+                    </div>
+                {/if}
+            </div>
+        </div>
+    {/if}
+</div>
+
+<style>
+    .game-container {
+        display: flex;
+        flex: 1;
+        width: 100%;
+        height: 100%;
+    }
+    .center {
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+    .waiting-panel {
+        gap: 2rem;
+    }
+    .progress-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+    .counter {
+        font-size: 1.5rem;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 0.5rem 1.5rem;
+        border-radius: 99px;
+    }
+    :global(.inline-icon) {
+        margin-right: 0.5rem;
+        vertical-align: middle;
+    }
+    .task-panel {
+        display: flex;
+        flex-direction: column;
+        /* Default portrait stacking */
+    }
+    /* Landscape specific alignment */
+    @media (orientation: landscape) {
+        .task-panel {
+            flex-direction: row;
+            gap: 2rem;
+        }
+        .context {
+            flex: 0 0 35%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-right: 1px solid var(--surface-hover);
+            padding-right: 1rem;
+        }
+        .action-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+    }
+
+    .badge {
+        display: inline-block;
+        background: var(--primary);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 99px;
+        font-size: 0.875rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+    }
+    .prompt-text,
+    .prompt-image {
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    .word-to-draw {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--secondary);
+    }
+    .prev-drawing {
+        max-width: 100%;
+        max-height: 40vh;
+        border-radius: 8px;
+        background: white; /* drawings have white background */
+    }
+    .writing-task {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        height: 100%;
+        justify-content: center;
+    }
+    .huge-input {
+        font-size: 1.5rem;
+        padding: 1.5rem;
+        text-align: center;
+    }
+    .send-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font-size: 1.25rem;
+        padding: 1rem;
+    }
+    .mt-4 {
+        margin-top: 2rem;
+    }
+    .hint {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+    }
+</style>
