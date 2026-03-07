@@ -6,6 +6,8 @@ export interface Game {
     created_at: string;
     status: GameStatus;
     current_turn: number;
+    presentation_chain_index?: number | null;
+    presentation_step_index?: number | null;
 }
 
 export interface Player {

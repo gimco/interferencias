@@ -243,6 +243,17 @@ export class GameState {
             .eq('id', this.game.id);
     }
 
+    async setPresentation(chainIndex: number | null, stepIndex: number | null) {
+        if (!this.me?.is_admin || !this.game) return;
+
+        await supabase.from('interferencias_games')
+            .update({
+                presentation_chain_index: chainIndex,
+                presentation_step_index: stepIndex
+            })
+            .eq('id', this.game.id);
+    }
+
     subscribe() {
         if (this.channel) this.channel.unsubscribe();
         if (!this.game) return;

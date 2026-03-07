@@ -1,18 +1,30 @@
 <script lang="ts">
     import { gameState } from "../lib/game.svelte";
-    import { RefreshCw, Play, ArrowLeft } from "lucide-svelte";
+    import { Play, ArrowLeft, ArrowRight, X } from "lucide-svelte";
     import type { GameItem, Player } from "../lib/types";
 
     let players = $derived(gameState.players);
     let items = $derived(gameState.items);
+    let game = $derived(gameState.game);
+    let me = $derived(gameState.me);
 
-    let selectedChain = $state<number | null>(null);
+    let is_admin = $derived(me?.is_admin);
+    let presentationChain = $derived(game?.presentation_chain_index ?? null);
+    let presentationStep = $derived(game?.presentation_step_index ?? null);
 
-    function getChain(index: number) {
-        return items
-            .filter((i) => i.chain_index === index)
-            .sort((a, b) => a.turn - b.turn);
-    }
+    let activeChainItems = $derived(
+        presentationChain !== null
+            ? items
+                  .filter((i) => i.chain_index === presentationChain)
+                  .sort((a, b) => a.turn - b.turn)
+            : [],
+    );
+
+    let currentItem = $derived(
+        presentationStep !== null && activeChainItems.length > presentationStep
+            ? activeChainItems[presentationStep]
+            : null,
+    );
 
     function getAuthor(playerId: string | null) {
         if (!playerId) return "Sistema";
@@ -22,60 +34,127 @@
     function leaveGame() {
         gameState.leave();
     }
+
+    function startPresentation(chainIndex: number) {
+        if (!is_admin) return;
+        gameState.setPresentation(chainIndex, 0);
+    }
+
+    function stopPresentation() {
+        if (!is_admin) return;
+        gameState.setPresentation(null, null);
+    }
+
+    function nextStep() {
+        if (!is_admin || presentationStep === null) return;
+        if (presentationStep < activeChainItems.length - 1) {
+            gameState.setPresentation(presentationChain, presentationStep + 1);
+        }
+    }
+
+    function prevStep() {
+        if (!is_admin || presentationStep === null) return;
+        if (presentationStep > 0) {
+            gameState.setPresentation(presentationChain, presentationStep - 1);
+        }
+    }
 </script>
 
-<div class="panel">
-    <div class="header">
-        <h2>Resultados Finales</h2>
-        <button class="secondary" onclick={leaveGame}>Salir</button>
-    </div>
+{#if presentationChain !== null && currentItem !== null}
+    <div class="presentation-mode">
+        <div class="present-header">
+            <h3>
+                Cadena de {players[presentationChain]?.name} - Paso {presentationStep! +
+                    1}/{activeChainItems.length}
+            </h3>
+            {#if is_admin}
+                <button
+                    class="icon-btn close-btn"
+                    onclick={stopPresentation}
+                    title="Cerrar presentación"
+                >
+                    <X size={24} />
+                </button>
+            {/if}
+        </div>
 
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="panel-content mt-4">
-        {#if selectedChain === null}
-            <p class="subtitle">
-                Selecciona la cadena de un jugador para ver el resultado:
-            </p>
-            <div class="chain-grid">
-                {#each players as player, i}
-                    <!-- svelte-ignore a11y_click_events_have_key_events -->
-                    <div class="chain-card" onclick={() => (selectedChain = i)}>
-                        <h3>Cadena de {player.name}</h3>
-                        <p class="meta">{getChain(i).length} pasos</p>
-                    </div>
-                {/each}
+        <div class="present-content">
+            <div class="author-badge">
+                Por: {getAuthor(currentItem.player_id)}
             </div>
-        {:else}
-            <button
-                class="back-btn mb-4"
-                onclick={() => (selectedChain = null)}
-            >
-                <ArrowLeft size={20} /> Volver a las cadenas
-            </button>
 
-            <div class="timeline">
-                {#each getChain(selectedChain) as item}
-                    <div class="timeline-item">
-                        <div class="author-badge">
-                            Por: {getAuthor(item.player_id)}
-                        </div>
-                        <div class="content-box">
-                            {#if item.type === "word"}
-                                <p class="final-word">"{item.content}"</p>
-                            {:else if item.type === "drawing"}
-                                <img
-                                    src={item.content}
-                                    alt="Dibujo final"
-                                    class="final-drawing"
-                                />
-                            {/if}
-                        </div>
-                    </div>
-                {/each}
+            {#if currentItem.type === "word"}
+                <div class="word-card">
+                    "{currentItem.content}"
+                </div>
+            {:else}
+                <img
+                    src={currentItem.content!}
+                    alt="Dibujo"
+                    class="fullscreen-img"
+                />
+            {/if}
+        </div>
+
+        {#if is_admin}
+            <div class="present-controls">
+                <button
+                    class="secondary action-btn"
+                    onclick={prevStep}
+                    disabled={presentationStep === 0}
+                >
+                    <ArrowLeft size={20} /> Anterior
+                </button>
+                <button
+                    class="primary action-btn"
+                    onclick={nextStep}
+                    disabled={presentationStep === activeChainItems.length - 1}
+                >
+                    Siguiente <ArrowRight size={20} />
+                </button>
             </div>
         {/if}
     </div>
-</div>
+{:else}
+    <div class="panel">
+        <div class="header">
+            <h2>Resultados Finales</h2>
+            <button class="secondary" onclick={leaveGame}>Salir</button>
+        </div>
+
+        <div class="panel-content mt-4">
+            {#if is_admin}
+                <p class="subtitle">
+                    Selecciona una cadena para mostrarla a todos los jugadores:
+                </p>
+                <div class="chain-grid">
+                    {#each players as player, i}
+                        <!-- svelte-ignore a11y_click_events_have_key_events -->
+                        <!-- svelte-ignore a11y_no_static_element_interactions -->
+                        <div
+                            class="chain-card"
+                            onclick={() => startPresentation(i)}
+                        >
+                            <h3>Cadena de {player.name}</h3>
+                            <p class="meta">
+                                {items.filter((item) => item.chain_index === i)
+                                    .length} pasos
+                            </p>
+                        </div>
+                    {/each}
+                </div>
+            {:else}
+                <div class="waiting-box">
+                    <h3>Esperando al moderador...</h3>
+                    <p class="text-muted">
+                        El administrador seleccionará qué resultados mostrar en
+                        tu pantalla.
+                    </p>
+                </div>
+            {/if}
+        </div>
+    </div>
+{/if}
 
 <style>
     .header {
@@ -87,23 +166,6 @@
     }
     .mt-4 {
         margin-top: 1.5rem;
-    }
-    .mb-4 {
-        margin-bottom: 1.5rem;
-    }
-    .back-btn {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        background: transparent;
-        color: var(--primary);
-        padding: 0.5rem 0;
-        cursor: pointer;
-    }
-    .back-btn:hover {
-        background: transparent;
-        color: var(--primary-hover);
-        text-decoration: underline;
     }
 
     .chain-grid {
@@ -127,63 +189,122 @@
         background: rgba(79, 70, 229, 0.1);
         border-color: var(--primary);
     }
-    .chain-card .meta {
+    .meta {
         color: var(--text-muted);
         font-size: 0.875rem;
         margin-top: 0.5rem;
     }
 
-    .timeline {
+    .waiting-box {
+        text-align: center;
+        padding: 4rem 1rem;
+        background: var(--surface-hover);
+        border-radius: 12px;
+    }
+    .text-muted {
+        color: var(--text-muted);
+        margin-top: 0.5rem;
+    }
+
+    /* Presentation Mode Styles */
+    .presentation-mode {
         display: flex;
         flex-direction: column;
-        gap: 2rem;
-        padding-left: 1rem;
-        border-left: 2px solid var(--surface-hover);
+        flex: 1;
+        width: 100%;
+        height: 100%;
+        background: var(--bg-color);
     }
 
-    .timeline-item {
+    .present-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: var(--surface);
+        border-radius: 12px;
+        margin-bottom: 1rem;
+    }
+
+    .icon-btn.close-btn {
+        background: rgba(244, 63, 94, 0.1);
+        color: var(--accent);
+        border: none;
+        padding: 0.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .present-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: var(--surface);
+        border-radius: 12px;
         position: relative;
-        padding-left: 2rem;
-    }
-
-    .timeline-item::before {
-        content: "";
-        position: absolute;
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        background: var(--primary);
-        left: -9px;
-        top: 0;
+        overflow: hidden;
+        padding: 2rem;
     }
 
     .author-badge {
-        display: inline-block;
-        font-size: 0.875rem;
-        color: var(--text-muted);
-        background: var(--surface-hover);
-        padding: 0.25rem 0.75rem;
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        font-size: 1rem;
+        color: white;
+        background: var(--primary);
+        padding: 0.5rem 1rem;
         border-radius: 99px;
-        margin-bottom: 0.5rem;
+        z-index: 10;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     }
 
-    .content-box {
-        background: rgba(0, 0, 0, 0.2);
-        padding: 1.5rem;
-        border-radius: 12px;
-        text-align: center;
-    }
-
-    .final-word {
-        font-size: 1.5rem;
-        font-weight: 700;
+    .word-card {
+        font-size: 3rem;
+        font-weight: 800;
         color: var(--secondary);
+        text-align: center;
+        word-wrap: break-word;
+        max-width: 90%;
     }
 
-    .final-drawing {
+    .fullscreen-img {
         max-width: 100%;
-        max-height: 400px;
+        max-height: 100%;
+        object-fit: contain;
+        background: white; /* Ensure drawing background is white */
         border-radius: 8px;
-        background: white; /* drawings must be over white */
+    }
+
+    .present-controls {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .action-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 1rem;
+        font-size: 1.25rem;
+    }
+
+    /* Override landscape constraints to prioritize full sizing */
+    @media (orientation: landscape) {
+        .presentation-mode {
+            padding: 0;
+            margin: 0;
+        }
+        .present-content {
+            padding: 1rem;
+        }
     }
 </style>
