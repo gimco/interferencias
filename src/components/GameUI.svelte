@@ -1,7 +1,7 @@
 <script lang="ts">
     import { gameState } from "../lib/game.svelte";
     import CameraCapture from "./CameraCapture.svelte";
-    import { CheckCircle, Play, RefreshCw } from "lucide-svelte";
+    import { CheckCircle, Play, RefreshCw, XCircle } from "lucide-svelte";
     import type { GameItem } from "../lib/types";
 
     let changeWordCount = $state(0);
@@ -45,9 +45,29 @@
         if (!myCurrentItem) return;
         gameState.submitTurn(myCurrentItem.id, dataUrl);
     }
+
+    function cancelGame() {
+        if (
+            confirm(
+                "¿Estás seguro de que deseas cancelar la partida entera para todos los jugadores?",
+            )
+        ) {
+            gameState.cancelGame();
+        }
+    }
 </script>
 
 <div class="game-container">
+    {#if me?.is_admin}
+        <button
+            class="icon-btn danger cancel-absolute"
+            onclick={cancelGame}
+            title="Cancelar partida"
+        >
+            <XCircle size={24} />
+        </button>
+    {/if}
+
     {#if !myCurrentItem}
         <div class="panel center">
             <h2>Buscando tu turno...</h2>
@@ -149,6 +169,22 @@
         width: 100%;
         height: 100%;
         overflow: hidden;
+        position: relative;
+    }
+    .cancel-absolute {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        z-index: 50;
+        background: rgba(244, 63, 94, 0.1);
+        color: var(--accent);
+        border: none;
+        padding: 0.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+    .cancel-absolute:hover {
+        background: rgba(244, 63, 94, 0.2);
     }
     .center {
         justify-content: center;

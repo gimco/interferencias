@@ -262,13 +262,32 @@ export class GameState {
             .eq('id', itemId);
     }
 
+    async cancelGame() {
+        if (!this.me?.is_admin || !this.game) return;
+        this.isLoading = true;
+        try {
+            await supabase.from('interferencias_games').delete().eq('id', this.game.id);
+            this.leave();
+        } catch (e: any) {
+            console.error(e);
+            this.error = e.message;
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
     subscribe() {
         if (this.channel) this.channel.unsubscribe();
         if (!this.game) return;
 
         this.channel = supabase.channel(`game_${this.game.id}`)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'interferencias_games', filter: `id=eq.${this.game.id}` }, payload => {
-                this.game = payload.new as Game;
+                if (payload.eventType === 'DELETE') {
+                    this.error = "La partida ha sido cancelada por el administrador.";
+                    this.leave();
+                } else {
+                    this.game = payload.new as Game;
+                }
             })
             .on('postgres_changes', { event: '*', schema: 'public', table: 'interferencias_players', filter: `game_id=eq.${this.game.id}` }, payload => {
                 if (payload.eventType === 'INSERT') {

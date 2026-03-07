@@ -1,6 +1,13 @@
 <script lang="ts">
     import { gameState } from "../lib/game.svelte";
-    import { RefreshCw, ArrowUp, ArrowDown, Play, Trash2 } from "lucide-svelte";
+    import {
+        RefreshCw,
+        ArrowUp,
+        ArrowDown,
+        Play,
+        Trash2,
+        XCircle,
+    } from "lucide-svelte";
 
     let players = $derived(
         [...gameState.players].sort(
@@ -9,6 +16,16 @@
     );
     let me = $derived(gameState.me);
     let is_admin = $derived(me?.is_admin);
+
+    function handleCancel() {
+        if (
+            confirm(
+                "¿Estás seguro de que deseas cancelar la partida entera para todos los jugadores?",
+            )
+        ) {
+            gameState.cancelGame();
+        }
+    }
 
     function moveUp(index: number) {
         if (index === 0) return;
@@ -53,9 +70,21 @@
             </div>
         </div>
         {#if is_admin}
-            <button class="primary start-btn" onclick={handleStart}>
-                <Play size={20} /> Empezar
-            </button>
+            <div class="header-actions">
+                <button
+                    class="secondary action-btn cancel-btn"
+                    onclick={handleCancel}
+                    title="Cancelar partida"
+                >
+                    <XCircle size={20} />
+                </button>
+                <button
+                    class="primary action-btn start-btn"
+                    onclick={handleStart}
+                >
+                    <Play size={20} /> Empezar
+                </button>
+            </div>
         {/if}
     </div>
 
@@ -120,12 +149,23 @@
         color: var(--secondary);
         user-select: all;
     }
-    .start-btn {
+    .header-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    .action-btn {
         display: flex;
         align-items: center;
         gap: 0.5rem;
         font-size: 1.25rem;
         padding: 1rem 2rem;
+    }
+    .cancel-btn {
+        padding: 1rem 1.25rem;
+        color: var(--accent);
+    }
+    .cancel-btn:hover {
+        background: rgba(244, 63, 94, 0.1);
     }
     .mt-2 {
         margin-top: 1rem;
