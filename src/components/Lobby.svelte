@@ -2,7 +2,11 @@
     import { gameState } from "../lib/game.svelte";
     import { RefreshCw, ArrowUp, ArrowDown, Play } from "lucide-svelte";
 
-    let players = $derived(gameState.players);
+    let players = $derived(
+        [...gameState.players].sort(
+            (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0),
+        ),
+    );
     let me = $derived(gameState.me);
     let is_admin = $derived(me?.is_admin);
 
@@ -53,13 +57,10 @@
         <h3>Jugadores ({players.length})</h3>
         <ul class="player-list">
             {#each players as player, i (player.id)}
-                <li class="player-item">
+                <li class="player-item" class:is-me={player.id === me?.id}>
                     <span>
                         <span class="player-num">{i + 1}.</span>
                         {player.name}
-                        {#if player.id === me?.id}<span class="glass-badge ml-2"
-                                >Tú</span
-                            >{/if}
                     </span>
                     {#if is_admin}
                         <div class="controls">
@@ -113,8 +114,10 @@
     .mt-2 {
         margin-top: 1rem;
     }
-    .ml-2 {
-        margin-left: 0.5rem;
+
+    .player-item.is-me {
+        background: rgba(16, 185, 129, 0.2); /* var(--secondary) with opacity */
+        border-right: 4px solid var(--secondary);
     }
 
     .player-num {
