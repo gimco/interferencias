@@ -275,6 +275,20 @@ export class GameState {
         }
     }
 
+    async leaveRoom() {
+        if (!this.me || !this.game) return;
+        this.isLoading = true;
+        try {
+            await supabase.from('interferencias_players').delete().eq('id', this.me.id);
+            this.leave();
+        } catch (e: any) {
+            console.error(e);
+            this.error = e.message;
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
     subscribe() {
         if (this.channel) this.channel.unsubscribe();
         if (!this.game) return;
@@ -288,12 +302,20 @@ export class GameState {
                     this.game = payload.new as Game;
                 }
             })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'interferencias_players', filter: `game_id=eq.${this.game.id}` }, payload => {
-                if (payload.eventType === 'INSERT') {
-                    this.players.push(payload.new as Player);
-                } else if (payload.eventType === 'UPDATE') {
-                    const idx = this.players.findIndex(p => p.id === payload.new.id);
-                    if (idx !== -1) this.players[idx] = payload.new as Player;
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'interferencias_players', filter: `game_id=eq.${this.game.id}` }, payload => {
+                const newPlayer = payload.new as Player;
+                if (!this.players.some(p => p.id === newPlayer.id)) {
+                    this.players = [...this.players, newPlayer];
+                }
+            })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'interferencias_players', filter: `game_id=eq.${this.game.id}` }, payload => {
+                this.players = this.players.map(p => p.id === payload.new.id ? (payload.new as Player) : p);
+            })
+            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'interferencias_players' }, payload => {
+                this.players = this.players.filter(p => p.id !== (payload.old.id || payload.old?.id));
+                if (this.me && payload.old.id === this.me.id) {
+                    this.error = "Has salido o te han expulsado de la sala.";
+                    this.leave();
                 }
             })
             .subscribe();
@@ -302,12 +324,11 @@ export class GameState {
             .on('postgres_changes', { event: '*', schema: 'public', table: 'interferencias_items', filter: `game_id=eq.${this.game.id}` }, payload => {
                 const newItem = payload.new as GameItem;
                 if (payload.eventType === 'INSERT') {
-                    if (!this.items.find(i => i.id === newItem.id)) {
-                        this.items.push(newItem);
+                    if (!this.items.some(i => i.id === newItem.id)) {
+                        this.items = [...this.items, newItem];
                     }
                 } else if (payload.eventType === 'UPDATE') {
-                    const idx = this.items.findIndex(i => i.id === newItem.id);
-                    if (idx >= 0) this.items[idx] = newItem;
+                    this.items = this.items.map(i => i.id === newItem.id ? newItem : i);
                 }
             })
             .subscribe();

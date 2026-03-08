@@ -10,6 +10,7 @@
         XCircle,
         QrCode,
         X,
+        LogOut,
     } from "lucide-svelte";
 
     let qrCodeDataURL = $state<string | null>(null);
@@ -49,6 +50,12 @@
             )
         ) {
             gameState.cancelGame();
+        }
+    }
+
+    function handleLeave() {
+        if (confirm("¿Estás seguro de que deseas salir de la sala?")) {
+            gameState.leaveRoom();
         }
     }
 
@@ -157,6 +164,16 @@
                                     <Trash2 size={16} />
                                 </button>
                             {/if}
+                        </div>
+                    {:else if player.id === me?.id}
+                        <div class="controls">
+                            <button
+                                class="icon-btn danger"
+                                onclick={handleLeave}
+                                title="Salir de la sala"
+                            >
+                                <LogOut size={16} />
+                            </button>
                         </div>
                     {/if}
                 </li>
