@@ -85,6 +85,13 @@
     {#if gameState.error}
         <div class="error">{gameState.error}</div>
     {/if}
+
+    {#if !isAdminRoute}
+        <div class="footer-links">
+            <a href="/palabra">Ver palabras</a>
+            <a href="/admin">Crear una sala</a>
+        </div>
+    {/if}
 </div>
 
 <style>
@@ -141,5 +148,21 @@
         border: 1px solid rgba(244, 63, 94, 0.2);
         font-size: 0.875rem;
         text-align: center;
+    }
+    .footer-links {
+        display: flex;
+        justify-content: space-between;
+        margin-top: auto;
+        padding-top: 2rem;
+        font-size: 0.875rem;
+        width: 100%;
+    }
+    .footer-links a {
+        color: var(--text-muted);
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    .footer-links a:hover {
+        color: var(--text);
     }
 </style>
