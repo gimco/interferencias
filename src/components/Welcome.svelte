@@ -28,7 +28,10 @@
 </script>
 
 <div class="panel" style="max-width: 500px; margin: auto; height: auto;">
-    <h1 class="title">Interferencias</h1>
+    <div class="logo-container">
+        <img src="/logo.png" alt="Logo" class="global-logo" />
+        <h1 class="title">Interferencias</h1>
+    </div>
     <p class="subtitle">El teléfono escacharrado pero dibujando</p>
 
     <div class="form-group">
@@ -164,5 +167,16 @@
     }
     .footer-links a:hover {
         color: var(--text);
+    }
+    .logo-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .global-logo {
+        width: 80px;
+        height: 80px;
+        object-fit: contain;
     }
 </style>

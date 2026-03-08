@@ -118,7 +118,10 @@
 {:else}
     <div class="panel">
         <div class="header">
-            <h2>Resultados Finales</h2>
+            <div class="title-with-logo">
+                <img src="/logo.png" alt="Logo" class="small-logo" />
+                <h2>Resultados Finales</h2>
+            </div>
             <button class="secondary" onclick={leaveGame}>Salir</button>
         </div>
 
@@ -163,6 +166,16 @@
         align-items: center;
         border-bottom: 1px solid var(--surface-hover);
         padding-bottom: 1rem;
+    }
+    .title-with-logo {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .small-logo {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
     }
     .mt-4 {
         margin-top: 1.5rem;

@@ -103,7 +103,10 @@
     {:else}
         <div class="panel task-panel">
             <div class="context">
-                <span class="badge">Turno {game?.current_turn}</span>
+                <div class="context-header">
+                    <img src="/logo.png" alt="Logo" class="small-logo" />
+                    <span class="badge">Turno {game?.current_turn}</span>
+                </div>
                 {#if previousItem?.type === "word"}
                     <div class="prompt-text">
                         <p class="text-muted" style="margin-bottom: 0.5rem;">
@@ -240,6 +243,18 @@
         }
     }
 
+    .context-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    .small-logo {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
+    }
     .badge {
         display: inline-block;
         background: var(--primary);
@@ -248,7 +263,7 @@
         border-radius: 99px;
         font-size: 0.875rem;
         font-weight: bold;
-        margin-bottom: 1rem;
+        margin-bottom: 0;
     }
     .prompt-text,
     .prompt-image {

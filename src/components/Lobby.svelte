@@ -95,7 +95,10 @@
 <div class="panel">
     <div class="header">
         <div class="header-info">
-            <h2>Sala de Espera</h2>
+            <div class="title-with-logo">
+                <img src="/logo.png" alt="Logo" class="small-logo" />
+                <h2>Sala de Espera</h2>
+            </div>
             <p class="subtitle">Código de Partida:</p>
             <div class="code-box-wrapper">
                 <div class="code-box">
@@ -231,6 +234,16 @@
         .header-info {
             align-items: flex-start;
         }
+    }
+    .title-with-logo {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .small-logo {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
     }
     .code-box-wrapper {
         display: flex;
