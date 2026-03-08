@@ -88,6 +88,15 @@ button.secondary:hover {
   background-color: var(--secondary-hover);
 }
 
+button.danger {
+  background-color: var(--accent);
+}
+
+button.danger:hover:not(:disabled) {
+  background-color: #e11d48;
+  /* rose-600 */
+}
+
 .title {
   font-size: 2.5rem;
   font-weight: 800;

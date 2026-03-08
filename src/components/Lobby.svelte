@@ -116,13 +116,6 @@
         {#if is_admin}
             <div class="header-actions">
                 <button
-                    class="secondary action-btn cancel-btn"
-                    onclick={handleCancel}
-                    title="Cancelar partida"
-                >
-                    <XCircle size={20} />
-                </button>
-                <button
                     class="primary action-btn start-btn"
                     onclick={handleStart}
                 >
@@ -183,6 +176,14 @@
             {/each}
         </ul>
     </div>
+
+    {#if is_admin}
+        <div class="footer-actions mt-4">
+            <button class="danger action-btn w-full" onclick={handleCancel}>
+                <XCircle size={20} /> Cancelar Partida
+            </button>
+        </div>
+    {/if}
 </div>
 
 {#if qrCodeDataURL}
@@ -284,16 +285,27 @@
             padding: 1rem 2rem;
         }
     }
-    .cancel-btn {
-        padding: 1rem 1.25rem;
-        color: var(--accent);
-        flex: none;
-    }
-    .cancel-btn:hover {
-        background: rgba(244, 63, 94, 0.1);
-    }
     .mt-2 {
         margin-top: 1rem;
+    }
+    .mt-4 {
+        margin-top: 1.5rem;
+    }
+    .w-full {
+        width: 100%;
+    }
+    .footer-actions {
+        display: flex;
+    }
+    @media (min-width: 600px) {
+        .footer-actions {
+            justify-content: flex-end;
+        }
+        .footer-actions .w-full {
+            width: auto;
+            flex: initial;
+            padding: 1rem 2rem;
+        }
     }
 
     .player-item.is-me {

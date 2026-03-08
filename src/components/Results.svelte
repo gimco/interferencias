@@ -1,6 +1,13 @@
 <script lang="ts">
     import { gameState } from "../lib/game.svelte";
-    import { Play, ArrowLeft, ArrowRight, X } from "lucide-svelte";
+    import {
+        Play,
+        ArrowLeft,
+        ArrowRight,
+        X,
+        XCircle,
+        LogOut,
+    } from "lucide-svelte";
     import type { GameItem, Player } from "../lib/types";
 
     let players = $derived(gameState.players);
@@ -32,7 +39,19 @@
     }
 
     function leaveGame() {
-        gameState.leave();
+        if (confirm("¿Estás seguro de que deseas salir de la sala?")) {
+            gameState.leaveRoom();
+        }
+    }
+
+    function handleCancel() {
+        if (
+            confirm(
+                "¿Estás seguro de que deseas finalizar la partida entera para todos los jugadores?",
+            )
+        ) {
+            gameState.cancelGame();
+        }
     }
 
     function startPresentation(chainIndex: number) {
@@ -122,7 +141,6 @@
                 <img src="/logo.png" alt="Logo" class="small-logo" />
                 <h2>Resultados Finales</h2>
             </div>
-            <button class="secondary" onclick={leaveGame}>Salir</button>
         </div>
 
         <div class="panel-content mt-4">
@@ -156,6 +174,18 @@
                 </div>
             {/if}
         </div>
+
+        <div class="footer-actions mt-4">
+            {#if is_admin}
+                <button class="danger action-btn w-full" onclick={handleCancel}>
+                    <XCircle size={20} /> Finalizar Partida para todos
+                </button>
+            {:else}
+                <button class="danger action-btn w-full" onclick={leaveGame}>
+                    <LogOut size={20} /> Salir de la sala
+                </button>
+            {/if}
+        </div>
     </div>
 {/if}
 
@@ -179,6 +209,22 @@
     }
     .mt-4 {
         margin-top: 1.5rem;
+    }
+    .w-full {
+        width: 100%;
+    }
+    .footer-actions {
+        display: flex;
+    }
+    @media (min-width: 600px) {
+        .footer-actions {
+            justify-content: flex-end;
+        }
+        .footer-actions .w-full {
+            width: auto;
+            flex: initial;
+            padding: 1rem 2rem;
+        }
     }
 
     .chain-grid {
