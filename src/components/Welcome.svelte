@@ -97,8 +97,8 @@
             <a href="/admin">Crear una sala</a>
         </div>
     {:else}
-        <div class="footer-links">
-            <a href="/">Volver</a>
+        <div style="margin-top: 2rem; text-align: center;">
+            <a href="/" class="btn-volver">Volver al menú</a>
         </div>
     {/if}
 </div>
@@ -184,5 +184,18 @@
         width: 80px;
         height: 80px;
         object-fit: contain;
+    }
+    .btn-volver {
+        display: inline-block;
+        background: var(--surface-hover);
+        color: var(--text-main);
+        text-decoration: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        transition: background 0.2s;
+        font-size: 1rem;
+    }
+    .btn-volver:hover {
+        background: rgba(255, 255, 255, 0.2);
     }
 </style>
