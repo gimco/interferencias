@@ -10,7 +10,11 @@
     } from "lucide-svelte";
     import type { GameItem, Player } from "../lib/types";
 
-    let players = $derived(gameState.players);
+    let players = $derived(
+        [...gameState.players].sort(
+            (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0),
+        ),
+    );
     let items = $derived(gameState.items);
     let game = $derived(gameState.game);
     let me = $derived(gameState.me);
@@ -84,7 +88,9 @@
     <div class="presentation-mode">
         <div class="present-header">
             <h3>
-                Cadena de {players[presentationChain]?.name} - Paso {presentationStep! +
+                Cadena de {players.find(
+                    (p) => p.order_index === presentationChain,
+                )?.name} - Paso {presentationStep! +
                     1}/{activeChainItems.length}
             </h3>
             {#if is_admin}
@@ -162,17 +168,20 @@
                     Selecciona una cadena para mostrarla a todos los jugadores:
                 </p>
                 <div class="chain-grid">
-                    {#each players as player, i}
+                    {#each players as player}
                         <!-- svelte-ignore a11y_click_events_have_key_events -->
                         <!-- svelte-ignore a11y_no_static_element_interactions -->
                         <div
                             class="chain-card"
-                            onclick={() => startPresentation(i)}
+                            onclick={() =>
+                                startPresentation(player.order_index!)}
                         >
                             <h3>Cadena de {player.name}</h3>
                             <p class="meta">
-                                {items.filter((item) => item.chain_index === i)
-                                    .length} pasos
+                                {items.filter(
+                                    (item) =>
+                                        item.chain_index === player.order_index,
+                                ).length} pasos
                             </p>
                         </div>
                     {/each}

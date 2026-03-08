@@ -187,9 +187,8 @@ export class GameState {
                     content: randomWord,
                     completed: true
                 });
-
                 for (let T = 1; T <= N; T++) {
-                    const authorIndex = (i + T) % N;
+                    const authorIndex = (i + T - 1 + N) % N;
                     const authPlayer = this.players.find(p => p.order_index === authorIndex);
                     initialItems.push({
                         game_id: this.game.id,
