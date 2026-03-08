@@ -18,12 +18,15 @@
 
     async function handleCreate() {
         if (!name.trim()) return;
-        await gameState.createGame(name);
+        await gameState.createGame(name.trim());
     }
 
     async function handleJoin() {
         if (!name.trim() || !gameIdToJoin.trim()) return;
-        await gameState.joinGame(gameIdToJoin, name);
+        await gameState.joinGame(
+            gameIdToJoin.trim().toUpperCase(),
+            name.trim(),
+        );
     }
 </script>
 

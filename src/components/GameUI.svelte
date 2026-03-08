@@ -39,7 +39,8 @@
 
     function submitWord() {
         if (!inputValue.trim() || !myCurrentItem) return;
-        gameState.submitTurn(myCurrentItem.id, inputValue);
+        gameState.submitTurn(myCurrentItem.id, inputValue.trim());
+        inputValue = "";
     }
 
     function submitDrawing(dataUrl: string) {
