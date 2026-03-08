@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy } from "svelte";
-    import { Camera, RefreshCw, CheckCircle, Upload } from "lucide-svelte";
+    import { Camera, RefreshCw, CheckCircle, Upload, X } from "lucide-svelte";
 
     let { onSubmit } = $props<{ onSubmit: (dataUrl: string) => void }>();
 
@@ -10,18 +10,15 @@
     let photoDataUrl = $state<string | null>(null);
     let cameraError = $state<string | null>(null);
     let isMobile = $state(false);
+    let mode = $state<"select" | "camera" | "preview">("select");
 
     onMount(() => {
         isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        startCamera();
-
-        return () => {
-            stopCamera();
-        };
     });
 
     async function startCamera() {
         cameraError = null;
+        mode = "camera";
         try {
             stream = await navigator.mediaDevices.getUserMedia({
                 video: {
@@ -65,11 +62,13 @@
         photoDataUrl = canvasRef.toDataURL("image/jpeg", 0.8);
 
         // Stop camera while viewing photo
+        mode = "preview";
         stopCamera();
     }
 
     function retake() {
         photoDataUrl = null;
+        mode = "camera";
         startCamera();
     }
 
@@ -83,6 +82,7 @@
         reader.onload = (e) => {
             if (e.target && typeof e.target.result === "string") {
                 photoDataUrl = e.target.result;
+                mode = "preview";
                 stopCamera();
             }
         };
@@ -98,7 +98,35 @@
 </script>
 
 <div class="camera-wrapper">
-    {#if cameraError && !photoDataUrl}
+    {#if mode === "select"}
+        <div class="selection-screen">
+            <h3>¿Cómo quieres subir tu dibujo?</h3>
+            <div class="selection-grid">
+                <button class="select-box" onclick={startCamera}>
+                    <div class="icon-circle primary-lite">
+                        <Camera size={32} />
+                    </div>
+                    <span>Usar Cámara</span>
+                </button>
+
+                <label class="select-box">
+                    <div class="icon-circle secondary-lite">
+                        <Upload size={32} />
+                    </div>
+                    <span>Subir Imagen</span>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onchange={handleFileUpload}
+                    />
+                </label>
+            </div>
+            <p class="text-xs text-muted mt-4">
+                Pudes capturar una foto directamente o elegir un archivo de tu
+                dispositivo
+            </p>
+        </div>
+    {:else if cameraError && mode === "camera"}
         <div class="error-box">
             <p>{cameraError}</p>
             <p class="mt-2 text-muted">
@@ -110,53 +138,51 @@
                 <input
                     type="file"
                     accept="image/*"
-                    capture="environment"
                     onchange={handleFileUpload}
                 />
             </label>
             <button
                 class="btn secondary"
                 style="margin-top: 0.5rem;"
-                onclick={startCamera}
+                onclick={() => (mode = "select")}
             >
-                Reintentar Cámara
+                Volver
             </button>
         </div>
-    {:else if photoDataUrl}
+    {:else if mode === "preview" && photoDataUrl}
         <!-- Photo Preview -->
         <div class="preview-container">
             <img src={photoDataUrl} alt="Foto capturada" />
         </div>
 
         <div class="actions">
-            <button class="btn secondary action-btn" onclick={retake}>
-                <RefreshCw size={24} /> Repetir
+            <button
+                class="btn secondary action-btn"
+                onclick={() => (mode = "select")}
+            >
+                <RefreshCw size={24} /> Cambiar
             </button>
             <button class="btn primary action-btn" onclick={finish}>
                 <CheckCircle size={24} /> Enviar foto
             </button>
         </div>
-    {:else}
+    {:else if mode === "camera"}
         <!-- Live Camera Feed -->
         <div class="video-container">
             <!-- svelte-ignore a11y_media_has_caption -->
             <video bind:this={videoRef} autoplay playsinline></video>
+            <button
+                class="close-btn-overlay"
+                onclick={() => {
+                    stopCamera();
+                    mode = "select";
+                }}
+            >
+                <X size={24} />
+            </button>
         </div>
 
         <div class="actions center">
-            {#if isMobile}
-                <div class="fallback-upload">
-                    <label class="icon-btn" title="Subir desde galería">
-                        <Upload size={24} />
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onchange={handleFileUpload}
-                        />
-                    </label>
-                </div>
-            {/if}
-
             <button
                 class="capture-btn"
                 aria-label="Hacer foto"
@@ -164,19 +190,6 @@
             >
                 <div class="inner-circle"></div>
             </button>
-
-            {#if !isMobile}
-                <div class="fallback-upload">
-                    <label class="icon-btn" title="Subir foto">
-                        <Upload size={24} />
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onchange={handleFileUpload}
-                        />
-                    </label>
-                </div>
-            {/if}
         </div>
     {/if}
 
@@ -210,6 +223,89 @@
         width: 100%;
         height: 100%;
         object-fit: contain;
+    }
+
+    .selection-screen {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 2rem 0;
+    }
+
+    .selection-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-top: 2rem;
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .select-box {
+        background: var(--surface-hover);
+        border: 2px solid transparent;
+        padding: 2rem 1rem;
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .select-box:hover {
+        background: var(--surface);
+        border-color: var(--primary);
+        transform: translateY(-4px);
+    }
+
+    .select-box span {
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .icon-circle {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .primary-lite {
+        background: rgba(79, 70, 229, 0.2);
+        color: var(--primary);
+    }
+    .secondary-lite {
+        background: rgba(16, 185, 129, 0.2);
+        color: var(--secondary);
+    }
+
+    .select-box input {
+        display: none;
+    }
+
+    .close-btn-overlay {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
     }
 
     .error-box {
@@ -278,25 +374,6 @@
         border: 2px solid #ccc;
     }
 
-    .fallback-upload {
-        position: absolute;
-        right: 1rem;
-    }
-
-    .icon-btn {
-        background: var(--surface);
-        color: var(--text-main);
-        border-radius: 50%;
-        width: 48px;
-        height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        border: 1px solid var(--surface-hover);
-    }
-
-    .icon-btn input[type="file"],
     .upload-btn input[type="file"] {
         display: none;
     }
