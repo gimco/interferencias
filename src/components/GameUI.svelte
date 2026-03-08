@@ -1,10 +1,11 @@
 <script lang="ts">
     import { gameState } from "../lib/game.svelte";
     import CameraCapture from "./CameraCapture.svelte";
-    import { CheckCircle, Play, RefreshCw, XCircle } from "lucide-svelte";
+    import { CheckCircle, Play, RefreshCw, XCircle, X } from "lucide-svelte";
     import type { GameItem } from "../lib/types";
 
     let changeWordCount = $state(0);
+    let showZoom = $state(false);
 
     let me = $derived(gameState.me);
     let game = $derived(gameState.game);
@@ -131,14 +132,26 @@
                 {:else if previousItem?.type === "drawing"}
                     <div class="prompt-image">
                         <h3>¿Qué ves aquí?</h3>
+                        <!-- svelte-ignore a11y_click_events_have_key_events -->
+                        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
                         <img
                             src={previousItem.content}
                             alt="Dibujo previo"
-                            class="prev-drawing"
+                            class="prev-drawing zoomable"
+                            onclick={() => (showZoom = true)}
                         />
                     </div>
                 {/if}
             </div>
+
+            {#if showZoom && previousItem?.content}
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div class="zoom-overlay" onclick={() => (showZoom = false)}>
+                    <img src={previousItem.content} alt="Dibujo ampliado" />
+                    <button class="close-zoom"><X size={32} /></button>
+                </div>
+            {/if}
 
             <div class="action-area">
                 {#if myCurrentItem.type === "drawing"}
@@ -281,6 +294,38 @@
         border-radius: 8px;
         background: white;
         object-fit: contain;
+    }
+    .zoomable {
+        cursor: zoom-in;
+    }
+    .zoom-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        cursor: zoom-out;
+    }
+    .zoom-overlay img {
+        max-width: 95vw;
+        max-height: 95vh;
+        object-fit: contain;
+        background: white;
+        border-radius: 8px;
+    }
+    .close-zoom {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: transparent;
+        color: white;
+        border: none;
+        cursor: pointer;
     }
     .writing-task {
         display: flex;

@@ -18,6 +18,7 @@
     let is_admin = $derived(me?.is_admin);
     let presentationChain = $derived(game?.presentation_chain_index ?? null);
     let presentationStep = $derived(game?.presentation_step_index ?? null);
+    let showZoom = $state(false);
 
     let activeChainItems = $derived(
         presentationChain !== null
@@ -107,13 +108,25 @@
                     "{currentItem.content}"
                 </div>
             {:else}
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
                 <img
                     src={currentItem.content!}
                     alt="Dibujo"
-                    class="fullscreen-img"
+                    class="fullscreen-img zoomable"
+                    onclick={() => (showZoom = true)}
                 />
             {/if}
         </div>
+
+        {#if showZoom && currentItem?.content}
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div class="zoom-overlay" onclick={() => (showZoom = false)}>
+                <img src={currentItem.content} alt="Dibujo ampliado" />
+                <button class="close-zoom"><X size={32} /></button>
+            </div>
+        {/if}
 
         {#if is_admin}
             <div class="present-controls">
@@ -338,6 +351,38 @@
         object-fit: contain;
         background: white; /* Ensure drawing background is white */
         border-radius: 8px;
+    }
+    .zoomable {
+        cursor: zoom-in;
+    }
+    .zoom-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        cursor: zoom-out;
+    }
+    .zoom-overlay img {
+        max-width: 95vw;
+        max-height: 95vh;
+        object-fit: contain;
+        background: white;
+        border-radius: 8px;
+    }
+    .close-zoom {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: transparent;
+        color: white;
+        border: none;
+        cursor: pointer;
     }
 
     .present-controls {
