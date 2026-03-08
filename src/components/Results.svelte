@@ -7,7 +7,9 @@
         X,
         XCircle,
         LogOut,
+        Download,
     } from "lucide-svelte";
+    import html2canvas from "html2canvas";
     import type { GameItem, Player } from "../lib/types";
 
     let players = $derived(
@@ -23,6 +25,37 @@
     let presentationChain = $derived(game?.presentation_chain_index ?? null);
     let presentationStep = $derived(game?.presentation_step_index ?? null);
     let showZoom = $state(false);
+    let isGeneratingCollage = $state(false);
+    let collageRef = $state<HTMLElement>();
+
+    async function downloadCollage() {
+        if (!collageRef || isGeneratingCollage || !game) return;
+        isGeneratingCollage = true;
+        try {
+            const canvas = await html2canvas(collageRef, {
+                backgroundColor: "#18181b", // surface color dark
+                scale: 1.5, // slightly upscale for better quality but without breaking memory limits
+                logging: false,
+                useCORS: true,
+                onclone: (doc, element) => {
+                    // Make it visible in the cloned doc tree to render properly
+                    element.style.opacity = "1";
+                    element.style.left = "0";
+                    element.style.top = "0";
+                },
+            });
+            const dataUrl = canvas.toDataURL("image/png", 0.9);
+            const link = document.createElement("a");
+            link.download = `interferencias-${game.code}.png`;
+            link.href = dataUrl;
+            link.click();
+        } catch (e) {
+            console.error("Error generating collage:", e);
+            alert("Hubo un error al generar el collage.");
+        } finally {
+            isGeneratingCollage = false;
+        }
+    }
 
     let activeChainItems = $derived(
         presentationChain !== null
@@ -194,6 +227,18 @@
                         </div>
                     {/each}
                 </div>
+                <button
+                    class="primary action-btn w-full mt-4"
+                    onclick={downloadCollage}
+                    disabled={isGeneratingCollage}
+                >
+                    <Download size={20} />
+                    {#if isGeneratingCollage}
+                        Generando Collage...
+                    {:else}
+                        Descargar Collage de la Partida
+                    {/if}
+                </button>
             {:else}
                 <div class="waiting-box">
                     <h3>Esperando al moderador...</h3>
@@ -218,6 +263,52 @@
         </div>
     </div>
 {/if}
+
+<div class="collage-wrapper">
+    <div bind:this={collageRef} class="collage-container">
+        <div class="collage-header">
+            <img src="/logo.png" alt="Logo" class="collage-logo" />
+            <div>
+                <h1>Interferencias</h1>
+                <p>
+                    Cadenas de la Partida #{game?.code} · {new Date().toLocaleDateString()}
+                </p>
+            </div>
+        </div>
+
+        <div class="collage-chains">
+            {#each players as player}
+                {@const chainItems = items
+                    .filter((item) => item.chain_index === player.order_index)
+                    .sort((a, b) => a.turn - b.turn)}
+                <div class="collage-row">
+                    <h3>Cadena de {player.name}</h3>
+                    <div class="collage-steps">
+                        {#each chainItems as item, idx}
+                            <div class="collage-step">
+                                <div class="step-meta">
+                                    <span class="step-num">{idx + 1}</span>
+                                    <span>{getAuthor(item.player_id)}</span>
+                                </div>
+                                {#if item.type === "word"}
+                                    <div class="step-word">
+                                        "{item.content}"
+                                    </div>
+                                {:else}
+                                    <img
+                                        src={item.content!}
+                                        alt="Dibujo"
+                                        class="step-img"
+                                    />
+                                {/if}
+                            </div>
+                        {/each}
+                    </div>
+                </div>
+            {/each}
+        </div>
+    </div>
+</div>
 
 <style>
     .header {
@@ -390,6 +481,124 @@
         max-height: 95vh;
         object-fit: contain;
         background: white;
+        border-radius: 8px;
+    }
+    .zoom-overlay .close-zoom {
+        position: absolute;
+        top: 2rem;
+        right: 2rem;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.2s;
+        z-index: 10000; /* Aseguramos que esté por encima de la imagen */
+    }
+
+    .zoom-overlay .close-zoom:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    .collage-wrapper {
+        position: fixed;
+        top: -9999px;
+        left: -9999px;
+        pointer-events: none;
+        opacity: 0;
+    }
+    .collage-container {
+        padding: 40px;
+        background: #18181b;
+        color: #f8fafc;
+        width: 1400px;
+        font-family: inherit;
+    }
+    .collage-header {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 40px;
+        border-bottom: 2px solid #27272a;
+        padding-bottom: 20px;
+    }
+    .collage-logo {
+        width: 80px;
+        height: 80px;
+        object-fit: contain;
+    }
+    .collage-header h1 {
+        margin: 0;
+        color: #10b981;
+        font-size: 2.5rem;
+    }
+    .collage-header p {
+        margin: 5px 0 0;
+        color: #a1a1aa;
+    }
+    .collage-chains {
+        display: flex;
+        flex-direction: column;
+        gap: 40px;
+    }
+    .collage-row {
+        background: #27272a;
+        padding: 30px;
+        border-radius: 16px;
+    }
+    .collage-row h3 {
+        margin: 0 0 20px;
+        color: #10b981;
+        font-size: 1.5rem;
+    }
+    .collage-steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 20px;
+    }
+    .collage-step {
+        background: #3f3f46;
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    .step-meta {
+        font-size: 0.875rem;
+        color: #d4d4d8;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .step-num {
+        background: #10b981;
+        color: white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+    .step-word {
+        font-size: 1.5rem;
+        font-weight: bold;
+        text-align: center;
+        margin: auto;
+        color: white;
+    }
+    .step-img {
+        width: 100%;
+        height: 180px;
+        object-fit: contain;
+        background: black;
         border-radius: 8px;
     }
     .close-zoom {
