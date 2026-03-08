@@ -43,7 +43,7 @@
             id="name"
             type="text"
             bind:value={name}
-            placeholder="ej. Gimco"
+            placeholder="ej. Bruno"
         />
     </div>
 
@@ -58,12 +58,11 @@
             </button>
         </div>
 
-        <div class="divider"><span>Compartir link para unirse</span></div>
         <p
             class="text-xs text-center"
             style="color: var(--text-muted); padding-bottom: 1rem"
         >
-            Los jugadores deben entrar a la ruta principal para unirse.
+            Crea una sala para que tus amigos puedan unirse.
         </p>
     {:else}
         <div class="form-group">
@@ -96,6 +95,10 @@
         <div class="footer-links">
             <a href="/palabra">Ver palabras</a>
             <a href="/admin">Crear una sala</a>
+        </div>
+    {:else}
+        <div class="footer-links">
+            <a href="/">Volver</a>
         </div>
     {/if}
 </div>
