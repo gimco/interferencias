@@ -45,25 +45,50 @@
         }
     }
 
-    function takePhoto() {
-        if (!videoRef || !canvasRef) return;
+    function resizeAndSave(
+        source: CanvasImageSource,
+        width: number,
+        height: number,
+    ) {
+        if (!canvasRef) return;
+        const MAX_DIMENSION = 800;
 
-        // Set canvas to video truth dimensions
-        canvasRef.width = videoRef.videoWidth;
-        canvasRef.height = videoRef.videoHeight;
+        let newWidth = width;
+        let newHeight = height;
+
+        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+            const ratio = Math.min(
+                MAX_DIMENSION / width,
+                MAX_DIMENSION / height,
+            );
+            newWidth = Math.round(width * ratio);
+            newHeight = Math.round(height * ratio);
+        } else if (width === 0 || height === 0) {
+            newWidth = 800;
+            newHeight = 600;
+        }
+
+        canvasRef.width = newWidth;
+        canvasRef.height = newHeight;
 
         const ctx = canvasRef.getContext("2d");
         if (!ctx) return;
 
-        // Draw video frame to canvas
-        ctx.drawImage(videoRef, 0, 0, canvasRef.width, canvasRef.height);
+        // Ensure drawing background is white before drawing (handles transparent PNGs)
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, newWidth, newHeight);
+        ctx.drawImage(source, 0, 0, newWidth, newHeight);
 
-        // Export to data URL
-        photoDataUrl = canvasRef.toDataURL("image/jpeg", 0.8);
+        // Export to highly compressed JPEG to fit in Supabase Realtime 1MB limit
+        photoDataUrl = canvasRef.toDataURL("image/jpeg", 0.6);
 
-        // Stop camera while viewing photo
         mode = "preview";
         stopCamera();
+    }
+
+    function takePhoto() {
+        if (!videoRef || !canvasRef) return;
+        resizeAndSave(videoRef, videoRef.videoWidth, videoRef.videoHeight);
     }
 
     function retake() {
@@ -81,9 +106,11 @@
 
         reader.onload = (e) => {
             if (e.target && typeof e.target.result === "string") {
-                photoDataUrl = e.target.result;
-                mode = "preview";
-                stopCamera();
+                const img = new Image();
+                img.onload = () => {
+                    resizeAndSave(img, img.width, img.height);
+                };
+                img.src = e.target.result;
             }
         };
 
