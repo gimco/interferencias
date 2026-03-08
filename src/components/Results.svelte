@@ -41,7 +41,7 @@
 
     function leaveGame() {
         if (confirm("¿Estás seguro de que deseas salir de la sala?")) {
-            gameState.leaveRoom();
+            gameState.leave();
         }
     }
 
