@@ -101,6 +101,14 @@
                 >
                     <X size={24} />
                 </button>
+            {:else}
+                <button
+                    class="icon-btn close-btn"
+                    onclick={leaveGame}
+                    title="Salir de la partida"
+                >
+                    <LogOut size={24} />
+                </button>
             {/if}
         </div>
 
