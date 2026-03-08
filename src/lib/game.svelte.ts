@@ -162,7 +162,7 @@ export class GameState {
     }
 
     async startGame() {
-        if (!this.me?.is_admin || !this.game) return;
+        if (!this.me?.is_admin || !this.game || this.isLoading) return;
         this.isLoading = true;
 
         try {
@@ -291,6 +291,7 @@ export class GameState {
 
     subscribe() {
         if (this.channel) this.channel.unsubscribe();
+        if (this.itemsChannel) this.itemsChannel.unsubscribe();
         if (!this.game) return;
 
         this.channel = supabase.channel(`game_${this.game.id}`)
@@ -346,6 +347,8 @@ export class GameState {
         localStorage.removeItem('interferencias_player_id');
         this.game = null;
         this.me = null;
+        this.players = [];
+        this.items = [];
     }
 
     leave() {
