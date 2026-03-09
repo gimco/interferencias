@@ -37,8 +37,8 @@
             stream = await navigator.mediaDevices.getUserMedia({
                 video: {
                     facingMode: "environment", // Prefer back camera
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 },
+                    width: { ideal: 800 },
+                    height: { ideal: 800 },
                 },
                 audio: false,
             });
@@ -62,8 +62,8 @@
     function cropperAction(node: HTMLImageElement) {
         if (cropper) cropper.destroy();
         cropper = new Cropper(node, {
-            aspectRatio: 800 / 480, // Relación de 800x480
-            viewMode: 0,
+            aspectRatio: 1, // Relación de 1:1 (cuadrado 800x800)
+            viewMode: 3, // Restringe la imagen al contenedor, evitando bordes blancos
             dragMode: "move", // Permite mover la foto por detrás
             cropBoxMovable: false, // Bloquea el movimiento del recuadro
             cropBoxResizable: false, // Bloquea el cambio de tamaño del recuadro
@@ -276,6 +276,11 @@
         <div class="video-container">
             <!-- svelte-ignore a11y_media_has_caption -->
             <video bind:this={videoRef} autoplay playsinline></video>
+
+            <div class="camera-overlay">
+                <div class="camera-guide"></div>
+            </div>
+
             <button
                 class="close-btn-overlay"
                 onclick={() => {
@@ -324,11 +329,36 @@
         position: relative;
     }
 
-    video,
+    video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
     img {
         width: 100%;
         height: 100%;
         object-fit: contain;
+    }
+
+    .camera-overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+
+    .camera-guide {
+        width: 100%;
+        max-width: 90%;
+        max-height: 90%;
+        aspect-ratio: 1;
+        border: 2px solid rgba(255, 255, 255, 0.8);
+        border-radius: 12px;
+        box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.5);
     }
 
     .selection-screen {
@@ -527,7 +557,7 @@
     }
     .cropper-wrapper {
         width: 100%;
-        aspect-ratio: 5 / 3;
+        aspect-ratio: 1;
         background: black;
         border-radius: 12px;
         overflow: hidden;
