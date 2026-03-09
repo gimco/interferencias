@@ -13,6 +13,14 @@
         const urlCode = params.get("c") || params.get("code");
         if (urlCode) {
             gameIdToJoin = urlCode;
+
+            // Limpiar la URL para que no quede el parámetro ?c=XXXX
+            window.history.replaceState(
+                {},
+                document.title,
+                window.location.pathname,
+            );
+
             if (!isAdminRoute) {
                 setTimeout(() => {
                     const userName = prompt(
