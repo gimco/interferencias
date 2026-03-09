@@ -342,14 +342,15 @@
         position: fixed;
         top: 0;
         left: 0;
-        width: 100vw;
-        height: 100vh;
+        width: 100%;
+        height: 100%;
         background: rgba(0, 0, 0, 0.8);
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 100;
         padding: 1rem;
+        box-sizing: border-box;
     }
     .modal-content {
         background: var(--surface);
@@ -358,6 +359,9 @@
         position: relative;
         text-align: center;
         max-width: 90vw;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-sizing: border-box;
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     }
     .close-modal {
@@ -367,11 +371,13 @@
     }
     .qr-img {
         width: 250px;
-        height: 250px;
+        height: auto;
+        max-height: 50vh;
         max-width: 100%;
         border-radius: 8px;
         margin: 1.5rem auto;
         display: block;
+        object-fit: contain;
     }
     .qr-btn {
         background: var(--surface-hover);
