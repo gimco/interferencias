@@ -11,6 +11,7 @@
         QrCode,
         X,
         LogOut,
+        Shuffle,
     } from "lucide-svelte";
 
     let qrCodeDataURL = $state<string | null>(null);
@@ -77,18 +78,37 @@
         gameState.updatePlayersOrder(newPlayers);
     }
 
+    async function randomizeOrderAndStart() {
+        if (!is_admin) return;
+        if (players.length < 2) {
+            alert("Se necesitan al menos 2 jugadores.");
+            return;
+        }
+        const newPlayers = [...players];
+        for (let i = newPlayers.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const temp = newPlayers[i];
+            newPlayers[i] = newPlayers[j];
+            newPlayers[j] = temp;
+        }
+        await gameState.updatePlayersOrder(newPlayers);
+
+        // Empezar la partida de inmediato
+        await gameState.startGame();
+    }
+
     function kick(player: any) {
         if (confirm(`¿Expulsar a ${player.name}?`)) {
             gameState.kickPlayer(player.id);
         }
     }
 
-    function handleStart() {
+    async function handleStart() {
         if (players.length < 2) {
             alert("Se necesitan al menos 2 jugadores.");
             return;
         }
-        gameState.startGame();
+        await gameState.startGame();
     }
 </script>
 
@@ -115,6 +135,13 @@
         </div>
         {#if is_admin}
             <div class="header-actions">
+                <button
+                    class="primary action-btn start-btn"
+                    onclick={randomizeOrderAndStart}
+                    title="Orden aleatorio y Empezar"
+                >
+                    <Shuffle size={20} />
+                </button>
                 <button
                     class="primary action-btn start-btn"
                     onclick={handleStart}
