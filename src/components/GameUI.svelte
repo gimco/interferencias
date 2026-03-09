@@ -1,11 +1,22 @@
 <script lang="ts">
     import { gameState } from "../lib/game.svelte";
     import CameraCapture from "./CameraCapture.svelte";
-    import { CheckCircle, Play, RefreshCw, XCircle, X } from "lucide-svelte";
-    import type { GameItem } from "../lib/types";
+    import {
+        CheckCircle,
+        Play,
+        RefreshCw,
+        XCircle,
+        X,
+        Users,
+        Copy,
+        Check,
+    } from "lucide-svelte";
+    import type { GameItem, Player } from "../lib/types";
 
     let changeWordCount = $state(0);
     let showZoom = $state(false);
+    let showPlayersModal = $state(false);
+    let copiedPlayerId = $state<string | null>(null);
 
     let me = $derived(gameState.me);
     let game = $derived(gameState.game);
@@ -57,6 +68,46 @@
             gameState.cancelGame();
         }
     }
+
+    function copyReconnectLink(player: Player) {
+        if (!game) return;
+        const link = `${window.location.origin}/?reconnect=${game.id}&p=${player.id}`;
+
+        const finishCopy = () => {
+            copiedPlayerId = player.id;
+            setTimeout(() => {
+                copiedPlayerId = null;
+            }, 2000);
+        };
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard
+                .writeText(link)
+                .then(finishCopy)
+                .catch(fallbackCopy);
+        } else {
+            fallbackCopy();
+        }
+
+        function fallbackCopy() {
+            const textArea = document.createElement("textarea");
+            textArea.value = link;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            textArea.style.top = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand("copy");
+                finishCopy();
+            } catch (err) {
+                console.error("No se pudo copiar el enlace", err);
+                prompt("Copia el enlace manualmente:", link);
+            }
+            document.body.removeChild(textArea);
+        }
+    }
 </script>
 
 <div class="game-container">
@@ -67,6 +118,13 @@
             title="Cancelar partida"
         >
             <XCircle size={24} />
+        </button>
+        <button
+            class="icon-btn users-absolute"
+            onclick={() => (showPlayersModal = true)}
+            title="Ver jugadores y enlaces de reconexión"
+        >
+            <Users size={24} />
         </button>
     {/if}
 
@@ -179,6 +237,51 @@
     {/if}
 </div>
 
+{#if showPlayersModal}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="modal-backdrop" onclick={() => (showPlayersModal = false)}>
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="modal-content" onclick={(e) => e.stopPropagation()}>
+            <button
+                class="icon-btn close-modal"
+                onclick={() => (showPlayersModal = false)}
+            >
+                <X size={24} />
+            </button>
+            <h3>Jugadores ({players.length})</h3>
+            <p class="text-muted mt-2" style="font-size: 0.85rem">
+                Copia el enlace mágico y envíalo por privado para que el jugador
+                recupere su turno si se ha desconectado.
+            </p>
+            <ul class="player-list mt-4">
+                {#each players as player, i}
+                    <li class="player-item" class:is-me={player.id === me?.id}>
+                        <span>
+                            <span class="player-num">{i + 1}.</span>
+                            {player.name}
+                            {player.id === me?.id ? "(Tú)" : ""}
+                        </span>
+
+                        <button
+                            class="icon-btn copy-btn"
+                            onclick={() => copyReconnectLink(player)}
+                            title="Copiar enlace de reconexión"
+                        >
+                            {#if copiedPlayerId === player.id}
+                                <Check size={18} color="var(--primary)" />
+                            {:else}
+                                <Copy size={18} />
+                            {/if}
+                        </button>
+                    </li>
+                {/each}
+            </ul>
+        </div>
+    </div>
+{/if}
+
 <style>
     .game-container {
         display: flex;
@@ -202,6 +305,21 @@
     }
     .cancel-absolute:hover {
         background: rgba(244, 63, 94, 0.2);
+    }
+    .users-absolute {
+        position: absolute;
+        top: 0.5rem;
+        right: 3.5rem;
+        z-index: 50;
+        background: var(--surface-hover);
+        color: var(--text-main);
+        border: none;
+        padding: 0.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+    .users-absolute:hover {
+        background: rgba(255, 255, 255, 0.2);
     }
     .center {
         justify-content: center;
@@ -355,5 +473,79 @@
         color: var(--text-muted);
         font-size: 0.875rem;
         margin-top: 0.5rem;
+    }
+
+    /* Modal classes */
+    .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        padding: 1rem;
+        box-sizing: border-box;
+    }
+    .modal-content {
+        background: var(--surface);
+        padding: 2.5rem 1.5rem;
+        border-radius: 12px;
+        position: relative;
+        text-align: center;
+        max-width: 90vw;
+        width: 400px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-sizing: border-box;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+    .close-modal {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+    }
+    .player-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: left;
+    }
+    .player-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background: var(--surface-hover);
+        border-radius: 8px;
+    }
+    .player-item.is-me {
+        background: rgba(16, 185, 129, 0.2);
+        border-right: 4px solid var(--secondary);
+    }
+    .player-num {
+        color: var(--text-muted);
+        margin-right: 0.5rem;
+        font-family: monospace;
+    }
+    .copy-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: var(--text-main);
+        padding: 0.25rem;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .copy-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
     }
 </style>

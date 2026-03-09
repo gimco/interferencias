@@ -14,6 +14,19 @@
     if (isWordRoute) return;
 
     // Try to reconnect
+    // Check for explicit reconnection link
+    const params = new URLSearchParams(window.location.search);
+    const reconnectGameId = params.get("reconnect");
+    const reconnectPlayerId = params.get("p");
+
+    if (reconnectGameId && reconnectPlayerId) {
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      gameState.resumeSession(reconnectGameId, reconnectPlayerId);
+      return;
+    }
+
+    // Try to reconnect from local storage
     const gameId = localStorage.getItem("interferencias_game_id");
     const playerId = localStorage.getItem("interferencias_player_id");
     if (gameId && playerId) {
