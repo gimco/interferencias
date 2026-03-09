@@ -70,7 +70,14 @@
             <input
                 id="gameId"
                 type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
                 bind:value={gameIdToJoin}
+                oninput={() => {
+                    gameIdToJoin = gameIdToJoin
+                        .replace(/[^0-9]/g, "")
+                        .slice(0, 4);
+                }}
                 placeholder="ej. 1234"
                 maxlength="4"
             />
