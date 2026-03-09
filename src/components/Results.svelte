@@ -33,7 +33,7 @@
         isGeneratingCollage = true;
         try {
             const canvas = await html2canvas(collageRef, {
-                backgroundColor: "#18181b", // surface color dark
+                backgroundColor: "#ffffff", // white background
                 scale: 1.5, // slightly upscale for better quality but without breaking memory limits
                 logging: false,
                 useCORS: true,
@@ -514,8 +514,8 @@
     }
     .collage-container {
         padding: 40px;
-        background: #18181b;
-        color: #f8fafc;
+        background: #ffffff;
+        color: #1f2937;
         width: 1400px;
         font-family: inherit;
     }
@@ -524,12 +524,12 @@
         align-items: center;
         gap: 20px;
         margin-bottom: 40px;
-        border-bottom: 2px solid #27272a;
+        border-bottom: 2px solid #e5e7eb;
         padding-bottom: 20px;
     }
     .collage-logo {
         width: 80px;
-        height: 80px;
+        height: auto;
         object-fit: contain;
     }
     .collage-header h1 {
@@ -539,7 +539,7 @@
     }
     .collage-header p {
         margin: 5px 0 0;
-        color: #a1a1aa;
+        color: #6b7280;
     }
     .collage-chains {
         display: flex;
@@ -547,9 +547,10 @@
         gap: 40px;
     }
     .collage-row {
-        background: #27272a;
+        background: #f9fafb;
         padding: 30px;
         border-radius: 16px;
+        border: 1px solid #e5e7eb;
     }
     .collage-row h3 {
         margin: 0 0 20px;
@@ -560,18 +561,21 @@
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
         gap: 20px;
+        align-items: start;
     }
     .collage-step {
-        background: #3f3f46;
+        background: #ffffff;
         border-radius: 12px;
         padding: 20px;
         display: flex;
         flex-direction: column;
         gap: 15px;
+        border: 1px solid #d1d5db;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
     .step-meta {
         font-size: 0.875rem;
-        color: #d4d4d8;
+        color: #6b7280;
         display: flex;
         align-items: center;
         gap: 10px;
@@ -592,13 +596,12 @@
         font-weight: bold;
         text-align: center;
         margin: auto;
-        color: white;
+        color: #1f2937;
     }
     .step-img {
         width: 100%;
-        height: 180px;
+        height: auto;
         object-fit: contain;
-        background: black;
         border-radius: 8px;
     }
     .close-zoom {
