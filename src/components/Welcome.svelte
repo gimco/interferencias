@@ -5,9 +5,27 @@
     let gameIdToJoin = $state("");
     let isAdminRoute = $state(false);
 
-    import { onMount } from "svelte";
+    import { onMount, onDestroy } from "svelte";
+    import { fade } from "svelte/transition";
+
+    const phrases = [
+        "Arranca siendo un avión ... termina pareciendo un camión. 😂",
+        "Nace como un castillo ... y acaba como un ladrillo. 🤣",
+        "Parte como un dragón ... y acaba siendo un jamón. 😆",
+        "Empieza como un gato ... y termina como un zapato. 🤭",
+        "Sale siendo un león ... y acaba en melón. 😅",
+        "Arranca con un pirata ... y termina en patata. 🤣",
+        "Comienza como un retrato ... y termina en garabato. 😄",
+        "Nace siendo un tesoro ... y acaba en loro. 😹",
+        "Parte siendo un tiburón ... y termina en mejillón. 😭",
+    ];
+    let currentPhraseIndex = $state(0);
+    let intervalId: ReturnType<typeof setInterval>;
 
     onMount(() => {
+        intervalId = setInterval(() => {
+            currentPhraseIndex = (currentPhraseIndex + 1) % phrases.length;
+        }, 10000);
         isAdminRoute = window.location.pathname === "/admin";
         const params = new URLSearchParams(window.location.search);
         const urlCode = params.get("c") || params.get("code");
@@ -34,6 +52,10 @@
         }
     });
 
+    onDestroy(() => {
+        if (intervalId) clearInterval(intervalId);
+    });
+
     async function handleCreate() {
         if (!name.trim()) return;
         await gameState.createGame(name.trim());
@@ -52,8 +74,15 @@
     <div class="logo-container">
         <img src="/logo.png" alt="Logo" class="global-logo" />
         <h1 class="title">Interferencias</h1>
+        <div class="slogan">El teléfono escacharrado pero dibujando.</div>
     </div>
-    <p class="subtitle">El teléfono escacharrado pero dibujando</p>
+    <p class="subtitle">
+        {#key currentPhraseIndex}
+            <span class="changing-phrase" in:fade={{ duration: 500 }}>
+                {phrases[currentPhraseIndex]}
+            </span>
+        {/key}
+    </p>
 
     <div class="form-group">
         <label for="name">Tu Nombre</label>
@@ -218,5 +247,13 @@
     }
     .copyright a:hover {
         color: rgba(255, 255, 255, 0.7);
+    }
+    .slogan {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: -1rem;
+        margin-bottom: 1rem;
+        font-weight: 500;
+        text-align: center;
     }
 </style>
