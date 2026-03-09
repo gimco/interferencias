@@ -314,6 +314,7 @@
     .video-container,
     .preview-container {
         flex: 1;
+        min-height: 0; /* Permite que el flexbox se encoja correctamente en móvil */
         background: black;
         border-radius: 12px;
         overflow: hidden;
@@ -433,6 +434,7 @@
 
     .actions {
         display: flex;
+        flex-shrink: 0; /* Previene que los botones se encojan o desaparezcan */
         gap: 1rem;
         padding: 0.5rem 0;
     }
