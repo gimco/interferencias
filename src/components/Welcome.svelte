@@ -76,13 +76,19 @@
         <h1 class="title">Interferencias</h1>
         <div class="slogan">El teléfono escacharrado pero dibujando.</div>
     </div>
-    <p class="subtitle">
-        {#key currentPhraseIndex}
-            <span class="changing-phrase" in:fade={{ duration: 500 }}>
-                {phrases[currentPhraseIndex]}
-            </span>
-        {/key}
-    </p>
+    {#if isAdminRoute}
+        <p class="subtitle">
+            Crea una sala para que tus amigos puedan unirse.
+        </p>
+        {:else}
+        <p class="subtitle">
+            {#key currentPhraseIndex}
+                <span class="changing-phrase" in:fade={{ duration: 500 }}>
+                    {phrases[currentPhraseIndex]}
+                </span>
+            {/key}
+        </p>
+    {/if}
 
     <div class="form-group">
         <label for="name">Tu Nombre</label>
@@ -104,13 +110,6 @@
                 Crear Nueva Partida
             </button>
         </div>
-
-        <p
-            class="text-xs text-center"
-            style="color: var(--text-muted); padding-bottom: 1rem"
-        >
-            Crea una sala para que tus amigos puedan unirse.
-        </p>
     {:else}
         <div class="form-group">
             <label for="gameId">Código de la Partida</label>
