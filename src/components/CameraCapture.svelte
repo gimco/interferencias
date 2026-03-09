@@ -1,6 +1,18 @@
 <script lang="ts">
     import { onMount, onDestroy } from "svelte";
-    import { Camera, RefreshCw, CheckCircle, Upload, X } from "lucide-svelte";
+    import {
+        Camera,
+        RefreshCw,
+        CheckCircle,
+        Upload,
+        X,
+        RotateCw,
+        RotateCcw,
+        ZoomIn,
+        ZoomOut,
+    } from "lucide-svelte";
+    import Cropper from "cropperjs";
+    import "cropperjs/dist/cropper.css";
 
     let { onSubmit } = $props<{ onSubmit: (dataUrl: string) => void }>();
 
@@ -10,7 +22,9 @@
     let photoDataUrl = $state<string | null>(null);
     let cameraError = $state<string | null>(null);
     let isMobile = $state(false);
-    let mode = $state<"select" | "camera" | "preview">("select");
+    let mode = $state<"select" | "camera" | "edit" | "preview">("select");
+    let rawPhotoUrl = $state<string | null>(null);
+    let cropper: Cropper | null = null;
 
     onMount(() => {
         isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -45,54 +59,66 @@
         }
     }
 
-    function resizeAndSave(
-        source: CanvasImageSource,
-        width: number,
-        height: number,
-    ) {
-        if (!canvasRef) return;
-        const MAX_DIMENSION = 800;
+    function cropperAction(node: HTMLImageElement) {
+        if (cropper) cropper.destroy();
+        cropper = new Cropper(node, {
+            aspectRatio: 800 / 480, // Relación de 800x480
+            viewMode: 0,
+            dragMode: "move", // Permite mover la foto por detrás
+            cropBoxMovable: false, // Bloquea el movimiento del recuadro
+            cropBoxResizable: false, // Bloquea el cambio de tamaño del recuadro
+            toggleDragModeOnDblclick: false,
+            background: false,
+            autoCropArea: 1, // Llena el 100% del contenedor
+            responsive: true,
+            guides: false, // Quita las cuadrículas del recorte para que quede mas simpe
+            center: false,
+            highlight: false,
+            modal: false, // Ocultar el overlay negro, el contenedor mostrará solo el recorte
+        });
 
-        let newWidth = width;
-        let newHeight = height;
+        return {
+            destroy() {
+                if (cropper) {
+                    cropper.destroy();
+                    cropper = null;
+                }
+            },
+        };
+    }
 
-        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-            const ratio = Math.min(
-                MAX_DIMENSION / width,
-                MAX_DIMENSION / height,
-            );
-            newWidth = Math.round(width * ratio);
-            newHeight = Math.round(height * ratio);
-        } else if (width === 0 || height === 0) {
-            newWidth = 800;
-            newHeight = 600;
-        }
-
-        canvasRef.width = newWidth;
-        canvasRef.height = newHeight;
-
-        const ctx = canvasRef.getContext("2d");
-        if (!ctx) return;
-
-        // Ensure drawing background is white before drawing (handles transparent PNGs)
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, newWidth, newHeight);
-        ctx.drawImage(source, 0, 0, newWidth, newHeight);
-
-        // Export to highly compressed JPEG to fit in Supabase Realtime 1MB limit
-        photoDataUrl = canvasRef.toDataURL("image/jpeg", 0.6);
-
+    function applyCrop() {
+        if (!cropper) return;
+        const canvas = cropper.getCroppedCanvas({
+            maxWidth: 1000,
+            maxHeight: 1000,
+            fillColor: "#fff",
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: "high",
+        });
+        if (!canvas) return;
+        photoDataUrl = canvas.toDataURL("image/jpeg", 0.6);
         mode = "preview";
-        stopCamera();
     }
 
     function takePhoto() {
         if (!videoRef || !canvasRef) return;
-        resizeAndSave(videoRef, videoRef.videoWidth, videoRef.videoHeight);
+        canvasRef.width = videoRef.videoWidth;
+        canvasRef.height = videoRef.videoHeight;
+        const ctx = canvasRef.getContext("2d");
+        if (!ctx) return;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvasRef.width, canvasRef.height);
+        ctx.drawImage(videoRef, 0, 0, canvasRef.width, canvasRef.height);
+
+        rawPhotoUrl = canvasRef.toDataURL("image/jpeg", 1);
+        mode = "edit";
+        stopCamera();
     }
 
     function retake() {
         photoDataUrl = null;
+        rawPhotoUrl = null;
         mode = "camera";
         startCamera();
     }
@@ -106,11 +132,9 @@
 
         reader.onload = (e) => {
             if (e.target && typeof e.target.result === "string") {
-                const img = new Image();
-                img.onload = () => {
-                    resizeAndSave(img, img.width, img.height);
-                };
-                img.src = e.target.result;
+                rawPhotoUrl = e.target.result;
+                mode = "edit";
+                stopCamera();
             }
         };
 
@@ -175,6 +199,60 @@
             >
                 Volver
             </button>
+        </div>
+    {:else if mode === "edit" && rawPhotoUrl}
+        <div class="edit-container">
+            <div class="cropper-wrapper">
+                <img
+                    src={rawPhotoUrl}
+                    alt="Editar Imagen"
+                    use:cropperAction
+                    crossorigin="anonymous"
+                />
+            </div>
+
+            <div class="cropper-controls">
+                <button
+                    class="icon-btn"
+                    onclick={() => cropper?.rotate(-90)}
+                    title="Girar Izquierda"
+                >
+                    <RotateCcw size={20} />
+                </button>
+                <button
+                    class="icon-btn"
+                    onclick={() => cropper?.rotate(90)}
+                    title="Girar Derecha"
+                >
+                    <RotateCw size={20} />
+                </button>
+                <button
+                    class="icon-btn"
+                    onclick={() => cropper?.zoom(0.1)}
+                    title="Acercar"
+                >
+                    <ZoomIn size={20} />
+                </button>
+                <button
+                    class="icon-btn"
+                    onclick={() => cropper?.zoom(-0.1)}
+                    title="Alejar"
+                >
+                    <ZoomOut size={20} />
+                </button>
+            </div>
+
+            <div class="actions center w-full">
+                <button
+                    class="btn secondary action-btn"
+                    onclick={() => (mode = "select")}
+                >
+                    Cancelar
+                </button>
+                <button class="btn primary action-btn" onclick={applyCrop}>
+                    Aceptar Recorte
+                </button>
+            </div>
         </div>
     {:else if mode === "preview" && photoDataUrl}
         <!-- Photo Preview -->
@@ -433,5 +511,49 @@
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
+    }
+
+    .edit-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center; /* Center the cropper vertically */
+        gap: 1rem;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+    }
+    .cropper-wrapper {
+        width: 100%;
+        aspect-ratio: 5 / 3;
+        background: black;
+        border-radius: 12px;
+        overflow: hidden;
+        flex: none;
+        margin: auto;
+    }
+    .cropper-wrapper img {
+        display: block;
+        max-width: 100%;
+    }
+    .cropper-controls {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        padding: 0.5rem;
+        background: var(--surface-hover);
+        border-radius: 12px;
+    }
+    .w-full {
+        width: 100%;
+    }
+
+    /* Ocultamos las lineas de la libreria para que se vea mas limpio */
+    :global(.cropper-view-box) {
+        outline: none !important;
+    }
+    :global(.cropper-point),
+    :global(.cropper-line) {
+        display: none !important;
     }
 </style>
