@@ -151,8 +151,7 @@
                         onclick={() => gameState.nextTurn()}
                     >
                         <Play size={20} class="inline-icon" />
-                        {#if isAllCompleted}Siguiente Turno{:else}Forzar
-                            Siguiente Turno{/if}
+                        Siguiente Turno
                     </button>
                     {#if !isAllCompleted}
                         <p class="hint">Aún no han terminado todos</p>
