@@ -1,11 +1,6 @@
 <script lang="ts">
-    import { onMount, onDestroy } from "svelte";
     import {
         Camera,
-        RefreshCw,
-        CheckCircle,
-        Upload,
-        X,
         RotateCw,
         RotateCcw,
         ZoomIn,
@@ -16,48 +11,9 @@
 
     let { onSubmit } = $props<{ onSubmit: (dataUrl: string) => void }>();
 
-    let videoRef = $state<HTMLVideoElement>();
-    let canvasRef: HTMLCanvasElement;
-    let stream: MediaStream | null = null;
-    let photoDataUrl = $state<string | null>(null);
-    let cameraError = $state<string | null>(null);
-    let isMobile = $state(false);
-    let mode = $state<"select" | "camera" | "edit" | "preview">("select");
+    let mode = $state<"select" | "edit">("select");
     let rawPhotoUrl = $state<string | null>(null);
     let cropper: Cropper | null = null;
-
-    onMount(() => {
-        isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    });
-
-    async function startCamera() {
-        cameraError = null;
-        mode = "camera";
-        try {
-            stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: "environment", // Prefer back camera
-                    width: { ideal: 800 },
-                    height: { ideal: 800 },
-                },
-                audio: false,
-            });
-            if (videoRef) {
-                videoRef.srcObject = stream;
-            }
-        } catch (err) {
-            console.error("Error accessing camera:", err);
-            cameraError =
-                "No se pudo acceder a la cámara. Revisa los permisos.";
-        }
-    }
-
-    function stopCamera() {
-        if (stream) {
-            stream.getTracks().forEach((t) => t.stop());
-            stream = null;
-        }
-    }
 
     function cropperAction(node: HTMLImageElement) {
         if (cropper) cropper.destroy();
@@ -87,7 +43,7 @@
         };
     }
 
-    function applyCrop() {
+    function finishAndSubmit() {
         if (!cropper) return;
         const canvas = cropper.getCroppedCanvas({
             maxWidth: 1000,
@@ -97,30 +53,8 @@
             imageSmoothingQuality: "high",
         });
         if (!canvas) return;
-        photoDataUrl = canvas.toDataURL("image/jpeg", 0.6);
-        mode = "preview";
-    }
-
-    function takePhoto() {
-        if (!videoRef || !canvasRef) return;
-        canvasRef.width = videoRef.videoWidth;
-        canvasRef.height = videoRef.videoHeight;
-        const ctx = canvasRef.getContext("2d");
-        if (!ctx) return;
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, canvasRef.width, canvasRef.height);
-        ctx.drawImage(videoRef, 0, 0, canvasRef.width, canvasRef.height);
-
-        rawPhotoUrl = canvasRef.toDataURL("image/jpeg", 1);
-        mode = "edit";
-        stopCamera();
-    }
-
-    function retake() {
-        photoDataUrl = null;
-        rawPhotoUrl = null;
-        mode = "camera";
-        startCamera();
+        const finalDataUrl = canvas.toDataURL("image/jpeg", 0.6);
+        onSubmit(finalDataUrl);
     }
 
     function handleFileUpload(event: Event) {
@@ -134,37 +68,26 @@
             if (e.target && typeof e.target.result === "string") {
                 rawPhotoUrl = e.target.result;
                 mode = "edit";
-                stopCamera();
+
+                // Clear the input so selecting the same file triggers again
+                input.value = "";
             }
         };
 
         reader.readAsDataURL(file);
-    }
-
-    function finish() {
-        if (photoDataUrl) {
-            onSubmit(photoDataUrl);
-        }
     }
 </script>
 
 <div class="camera-wrapper">
     {#if mode === "select"}
         <div class="selection-screen">
-            <h3>¿Cómo quieres subir tu dibujo?</h3>
-            <div class="selection-grid">
-                <button class="select-box" onclick={startCamera}>
+            <h3>Sube tu dibujo</h3>
+            <div class="selection-container">
+                <label class="select-box">
                     <div class="icon-circle primary-lite">
                         <Camera size={32} />
                     </div>
-                    <span>Usar Cámara</span>
-                </button>
-
-                <label class="select-box">
-                    <div class="icon-circle secondary-lite">
-                        <Upload size={32} />
-                    </div>
-                    <span>Subir Imagen</span>
+                    <span>Añadir foto</span>
                     <input
                         type="file"
                         accept="image/*"
@@ -173,35 +96,12 @@
                 </label>
             </div>
             <p class="text-xs text-muted mt-4">
-                Pudes capturar una foto directamente o elegir un archivo de tu
-                dispositivo
+                Puedes hacer una foto o elegirla de tu galería
             </p>
-        </div>
-    {:else if cameraError && mode === "camera"}
-        <div class="error-box">
-            <p>{cameraError}</p>
-            <p class="mt-2 text-muted">
-                Alternativa: Sube una foto en su lugar
-            </p>
-
-            <label class="btn secondary upload-btn" style="margin-top: 1rem;">
-                <Upload size={20} /> Elegir archivo
-                <input
-                    type="file"
-                    accept="image/*"
-                    onchange={handleFileUpload}
-                />
-            </label>
-            <button
-                class="btn secondary"
-                style="margin-top: 0.5rem;"
-                onclick={() => (mode = "select")}
-            >
-                Volver
-            </button>
         </div>
     {:else if mode === "edit" && rawPhotoUrl}
         <div class="edit-container">
+            <h3 class="edit-title">Recortar foto</h3>
             <div class="cropper-wrapper">
                 <img
                     src={rawPhotoUrl}
@@ -245,66 +145,22 @@
             <div class="actions center w-full">
                 <button
                     class="btn secondary action-btn"
-                    onclick={() => (mode = "select")}
+                    onclick={() => {
+                        rawPhotoUrl = null;
+                        mode = "select";
+                    }}
                 >
-                    Cancelar
+                    Volver
                 </button>
-                <button class="btn primary action-btn" onclick={applyCrop}>
-                    Aceptar Recorte
+                <button
+                    class="btn primary action-btn"
+                    onclick={finishAndSubmit}
+                >
+                    Subir foto
                 </button>
             </div>
-        </div>
-    {:else if mode === "preview" && photoDataUrl}
-        <!-- Photo Preview -->
-        <div class="preview-container">
-            <img src={photoDataUrl} alt="Foto capturada" />
-        </div>
-
-        <div class="actions">
-            <button
-                class="btn secondary action-btn"
-                onclick={() => (mode = "select")}
-            >
-                <RefreshCw size={24} /> Cambiar
-            </button>
-            <button class="btn primary action-btn" onclick={finish}>
-                <CheckCircle size={24} /> Enviar foto
-            </button>
-        </div>
-    {:else if mode === "camera"}
-        <!-- Live Camera Feed -->
-        <div class="video-container">
-            <!-- svelte-ignore a11y_media_has_caption -->
-            <video bind:this={videoRef} autoplay playsinline></video>
-
-            <div class="camera-overlay">
-                <div class="camera-guide"></div>
-            </div>
-
-            <button
-                class="close-btn-overlay"
-                onclick={() => {
-                    stopCamera();
-                    mode = "select";
-                }}
-            >
-                <X size={24} />
-            </button>
-        </div>
-
-        <div class="actions center">
-            <button
-                class="capture-btn"
-                aria-label="Hacer foto"
-                onclick={takePhoto}
-            >
-                <div class="inner-circle"></div>
-            </button>
         </div>
     {/if}
-
-    <!-- Hidden canvas for capturing frames -->
-    <canvas bind:this={canvasRef} style="display: none;"></canvas>
 </div>
 
 <style>
@@ -316,51 +172,6 @@
         position: relative;
     }
 
-    .video-container,
-    .preview-container {
-        flex: 1;
-        min-height: 0; /* Permite que el flexbox se encoja correctamente en móvil */
-        background: black;
-        border-radius: 12px;
-        overflow: hidden;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        position: relative;
-    }
-
-    video {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-    }
-
-    .camera-overlay {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-    }
-
-    .camera-guide {
-        width: 100%;
-        max-width: 90%;
-        max-height: 90%;
-        aspect-ratio: 1;
-        border: 2px solid rgba(255, 255, 255, 0.8);
-        border-radius: 12px;
-        box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.5);
-    }
-
     .selection-screen {
         flex: 1;
         display: flex;
@@ -368,31 +179,31 @@
         align-items: center;
         justify-content: center;
         text-align: center;
-        padding: 2rem 0;
+        padding: 1rem 0;
     }
 
-    .selection-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1.5rem;
-        margin-top: 2rem;
+    .selection-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 1.5rem;
         width: 100%;
-        max-width: 400px;
+        max-width: 200px;
     }
 
     .select-box {
         background: var(--surface-hover);
         border: 2px solid transparent;
-        padding: 2rem 1rem;
+        padding: 1.5rem 1rem;
         border-radius: 16px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 1rem;
+        gap: 0.5rem;
         cursor: pointer;
         transition: all 0.2s;
         text-decoration: none;
         color: inherit;
+        width: 100%;
     }
 
     .select-box:hover {
@@ -419,43 +230,9 @@
         background: rgba(79, 70, 229, 0.2);
         color: var(--primary);
     }
-    .secondary-lite {
-        background: rgba(16, 185, 129, 0.2);
-        color: var(--secondary);
-    }
 
     .select-box input {
         display: none;
-    }
-
-    .close-btn-overlay {
-        position: absolute;
-        top: 1rem;
-        right: 1rem;
-        background: rgba(0, 0, 0, 0.5);
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-    }
-
-    .error-box {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background: rgba(244, 63, 94, 0.1);
-        border: 2px dashed rgba(244, 63, 94, 0.4);
-        border-radius: 12px;
-        color: var(--text-main);
-        padding: 2rem;
-        text-align: center;
     }
 
     .text-muted {
@@ -464,7 +241,7 @@
 
     .actions {
         display: flex;
-        flex-shrink: 0; /* Previene que los botones se encojan o desaparezcan */
+        flex-shrink: 0;
         gap: 1rem;
         padding: 0.5rem 0;
     }
@@ -483,36 +260,6 @@
         gap: 0.5rem;
         padding: 1.25rem;
         font-size: 1.25rem;
-    }
-
-    .capture-btn {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        background: white;
-        border: 4px solid var(--surface-hover);
-        padding: 4px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: transform 0.1s;
-    }
-
-    .capture-btn:active {
-        transform: scale(0.95);
-    }
-
-    .capture-btn .inner-circle {
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        background: white;
-        border: 2px solid #ccc;
-    }
-
-    .upload-btn input[type="file"] {
-        display: none;
     }
 
     .btn {
@@ -538,23 +285,25 @@
     .btn.secondary:hover {
         background-color: rgba(255, 255, 255, 0.2);
     }
-    .upload-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-    }
 
     .edit-container {
         flex: 1;
         display: flex;
         flex-direction: column;
-        justify-content: center; /* Center the cropper vertically */
+        justify-content: center;
         gap: 1rem;
         width: 100%;
         height: 100%;
         min-height: 0;
     }
+
+    .edit-title {
+        text-align: center;
+        margin: 0;
+        margin-top: 1rem;
+        font-size: 1.2rem;
+    }
+
     .cropper-wrapper {
         width: 100%;
         aspect-ratio: 1;
@@ -576,6 +325,24 @@
         background: var(--surface-hover);
         border-radius: 12px;
     }
+
+    .icon-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-main);
+        cursor: pointer;
+        padding: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        transition: background-color 0.2s;
+    }
+
+    .icon-btn:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
     .w-full {
         width: 100%;
     }
