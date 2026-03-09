@@ -13,6 +13,16 @@
         const urlCode = params.get("c") || params.get("code");
         if (urlCode) {
             gameIdToJoin = urlCode;
+            if (!isAdminRoute) {
+                setTimeout(() => {
+                    const userName = prompt(
+                        "Escribe tu nombre para unirte a la partida:",
+                    );
+                    if (userName) {
+                        name = userName.trim();
+                    }
+                }, 100);
+            }
         }
     });
 
