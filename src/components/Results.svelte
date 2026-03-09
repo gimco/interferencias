@@ -523,7 +523,7 @@
         display: flex;
         align-items: center;
         gap: 20px;
-        margin-bottom: 40px;
+        margin-bottom: 20px;
         border-bottom: 2px solid #e5e7eb;
         padding-bottom: 20px;
     }
@@ -544,34 +544,36 @@
     .collage-chains {
         display: flex;
         flex-direction: column;
-        gap: 40px;
+        gap: 20px;
     }
     .collage-row {
         background: #f9fafb;
-        padding: 30px;
+        padding: 20px;
         border-radius: 16px;
         border: 1px solid #e5e7eb;
     }
     .collage-row h3 {
-        margin: 0 0 20px;
+        margin: 0 0 15px;
         color: #10b981;
         font-size: 1.5rem;
     }
     .collage-steps {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: 20px;
+        gap: 10px;
         align-items: start;
     }
     .collage-step {
         background: #ffffff;
         border-radius: 12px;
-        padding: 20px;
+        padding: 15px;
         display: flex;
         flex-direction: column;
-        gap: 15px;
+        gap: 10px;
         border: 1px solid #d1d5db;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        aspect-ratio: 1 / 1;
+        overflow: hidden;
     }
     .step-meta {
         font-size: 0.875rem;
@@ -579,6 +581,7 @@
         display: flex;
         align-items: center;
         gap: 10px;
+        flex-shrink: 0;
     }
     .step-num {
         background: #10b981;
@@ -597,10 +600,12 @@
         text-align: center;
         margin: auto;
         color: #1f2937;
+        word-break: break-word;
     }
     .step-img {
         width: 100%;
-        height: auto;
+        flex: 1;
+        min-height: 0;
         object-fit: contain;
         border-radius: 8px;
     }
