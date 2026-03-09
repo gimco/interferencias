@@ -103,6 +103,12 @@
     {/if}
 </div>
 
+<div class="copyright">
+    <a href="https://blog.gimco.es" target="_blank" rel="noopener noreferrer">
+        Made in Sanlúcar with ❤️🤖🦐🥂
+    </a>
+</div>
+
 <style>
     .form-group {
         display: flex;
@@ -124,29 +130,6 @@
     .secondary {
         width: 100%;
         padding: 1rem;
-    }
-    .divider {
-        margin: 2rem 0;
-        text-align: center;
-        position: relative;
-    }
-    .divider::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 50%;
-        width: 100%;
-        height: 1px;
-        background: var(--surface-hover);
-        z-index: 1;
-    }
-    .divider span {
-        background: var(--surface);
-        padding: 0 1rem;
-        color: var(--text-muted);
-        position: relative;
-        z-index: 2;
-        font-size: 0.875rem;
     }
     .error {
         margin-top: 1rem;
@@ -197,5 +180,18 @@
     }
     .btn-volver:hover {
         background: rgba(255, 255, 255, 0.2);
+    }
+    .copyright {
+        margin-top: 1.5rem;
+        text-align: center;
+        font-size: 0.8rem;
+    }
+    .copyright a {
+        color: rgba(255, 255, 255, 0.3); /* Color mucho más claro */
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    .copyright a:hover {
+        color: rgba(255, 255, 255, 0.7);
     }
 </style>
