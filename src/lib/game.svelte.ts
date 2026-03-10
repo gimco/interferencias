@@ -174,6 +174,14 @@ export class GameState {
 
             const initialItems: any[] = [];
 
+            // Generate random offsets for each turn to avoid a player always receiving from the same person
+            const baseOffsets = Array.from({ length: Math.max(0, N - 1) }, (_, k) => k + 1);
+            for (let k = baseOffsets.length - 1; k > 0; k--) {
+                const j = Math.floor(Math.random() * (k + 1));
+                [baseOffsets[k], baseOffsets[j]] = [baseOffsets[j], baseOffsets[k]];
+            }
+            const turnOffsets = [0, ...baseOffsets];
+
             for (let i = 0; i < N; i++) {
                 const randomWord = secretWords[Math.floor(Math.random() * secretWords.length)];
                 const player = this.players.find(p => p.order_index === i)!;
@@ -188,7 +196,7 @@ export class GameState {
                     completed: true
                 });
                 for (let T = 1; T <= N; T++) {
-                    const authorIndex = (i + T - 1 + N) % N;
+                    const authorIndex = (i + turnOffsets[T - 1]) % N;
                     const authPlayer = this.players.find(p => p.order_index === authorIndex);
                     initialItems.push({
                         game_id: this.game.id,

@@ -3,15 +3,12 @@
     import QRCode from "qrcode";
     import {
         RefreshCw,
-        ArrowUp,
-        ArrowDown,
         Play,
         Trash2,
         XCircle,
         QrCode,
         X,
         LogOut,
-        Shuffle,
     } from "lucide-svelte";
 
     let qrCodeDataURL = $state<string | null>(null);
@@ -60,43 +57,6 @@
         }
     }
 
-    function moveUp(index: number) {
-        if (index === 0) return;
-        const newPlayers = [...players];
-        const temp = newPlayers[index];
-        newPlayers[index] = newPlayers[index - 1];
-        newPlayers[index - 1] = temp;
-        gameState.updatePlayersOrder(newPlayers);
-    }
-
-    function moveDown(index: number) {
-        if (index === players.length - 1) return;
-        const newPlayers = [...players];
-        const temp = newPlayers[index];
-        newPlayers[index] = newPlayers[index + 1];
-        newPlayers[index + 1] = temp;
-        gameState.updatePlayersOrder(newPlayers);
-    }
-
-    async function randomizeOrderAndStart() {
-        if (!is_admin) return;
-        if (players.length < 2) {
-            alert("Se necesitan al menos 2 jugadores.");
-            return;
-        }
-        const newPlayers = [...players];
-        for (let i = newPlayers.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            const temp = newPlayers[i];
-            newPlayers[i] = newPlayers[j];
-            newPlayers[j] = temp;
-        }
-        await gameState.updatePlayersOrder(newPlayers);
-
-        // Empezar la partida de inmediato
-        await gameState.startGame();
-    }
-
     function kick(player: any) {
         if (confirm(`¿Expulsar a ${player.name}?`)) {
             gameState.kickPlayer(player.id);
@@ -137,13 +97,6 @@
             <div class="header-actions">
                 <button
                     class="primary action-btn start-btn"
-                    onclick={randomizeOrderAndStart}
-                    title="Orden aleatorio y Empezar"
-                >
-                    <Shuffle size={20} />
-                </button>
-                <button
-                    class="primary action-btn start-btn"
                     onclick={handleStart}
                 >
                     <Play size={20} /> Empezar
@@ -163,21 +116,6 @@
                     </span>
                     {#if is_admin}
                         <div class="controls">
-                            <button
-                                class="icon-btn"
-                                disabled={i === 0}
-                                onclick={() => moveUp(i)}
-                            >
-                                <ArrowUp size={16} />
-                            </button>
-                            <button
-                                class="icon-btn"
-                                disabled={i === players.length - 1}
-                                onclick={() => moveDown(i)}
-                                title="Bajar"
-                            >
-                                <ArrowDown size={16} />
-                            </button>
                             {#if player.id !== me?.id}
                                 <button
                                     class="icon-btn danger"
