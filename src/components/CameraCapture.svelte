@@ -1,6 +1,7 @@
 <script lang="ts">
     import {
         Camera,
+        Upload,
         RotateCw,
         RotateCcw,
         ZoomIn,
@@ -81,13 +82,25 @@
 <div class="camera-wrapper">
     {#if mode === "select"}
         <div class="selection-screen">
-            <h3>Sube tu dibujo</h3>
+            <h3>Comparte tu dibujo</h3>
             <div class="selection-container">
                 <label class="select-box">
                     <div class="icon-circle primary-lite">
                         <Camera size={32} />
                     </div>
-                    <span>Añadir foto</span>
+                    <span>Cámara</span>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onchange={handleFileUpload}
+                    />
+                </label>
+                <label class="select-box">
+                    <div class="icon-circle primary-lite">
+                        <Upload size={32} />
+                    </div>
+                    <span>Subir foto</span>
                     <input
                         type="file"
                         accept="image/*"
@@ -184,10 +197,11 @@
 
     .selection-container {
         display: flex;
+        gap: 1rem;
         justify-content: center;
         margin-top: 1.5rem;
         width: 100%;
-        max-width: 200px;
+        max-width: 400px;
     }
 
     .select-box {
