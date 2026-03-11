@@ -13,6 +13,17 @@ export class GameState {
 
     private channel: RealtimeChannel | null = null;
     private itemsChannel: RealtimeChannel | null = null;
+    private visibilityHandler: (() => void) | null = null;
+
+    constructor() {
+        // Re-subscribe when the app returns to foreground (fixes iOS WebSocket drops)
+        this.visibilityHandler = () => {
+            if (document.visibilityState === 'visible' && this.game && this.me) {
+                this.refreshAndResubscribe();
+            }
+        };
+        document.addEventListener('visibilitychange', this.visibilityHandler);
+    }
 
     async createGame(playerName: string) {
         this.isLoading = true;
@@ -115,6 +126,28 @@ export class GameState {
         if (!error && data) {
             this.items = data;
         }
+    }
+
+    async fetchGame() {
+        if (!this.game) return;
+        const { data, error } = await supabase
+            .from('interferencias_games')
+            .select('*')
+            .eq('id', this.game.id)
+            .single();
+
+        if (!error && data) {
+            this.game = data;
+        }
+    }
+
+    async refreshAndResubscribe() {
+        // Refresh latest data in case we missed updates while in background
+        await this.fetchGame();
+        await this.fetchPlayers();
+        await this.fetchItems();
+        // Re-subscribe channels (iOS drops WebSocket connections in background)
+        this.subscribe();
     }
 
     async resumeSession(gameId: string, playerId: string) {
