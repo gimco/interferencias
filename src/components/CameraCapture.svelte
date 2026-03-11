@@ -1,7 +1,6 @@
 <script lang="ts">
     import {
         Camera,
-        Upload,
         RotateCw,
         RotateCcw,
         ZoomIn,
@@ -9,8 +8,27 @@
     } from "lucide-svelte";
     import Cropper from "cropperjs";
     import "cropperjs/dist/cropper.css";
+    import { onMount } from "svelte";
+
+    function reenterFullscreen() {
+        const el = document.documentElement;
+        if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
+            if (el.requestFullscreen) {
+                el.requestFullscreen().catch(() => {});
+            } else if ((el as any).webkitRequestFullscreen) {
+                (el as any).webkitRequestFullscreen();
+            }
+        }
+    }
 
     let { onSubmit } = $props<{ onSubmit: (dataUrl: string) => void }>();
+
+    onMount(() => {
+        // Re-enter fullscreen when returning from the camera app
+        const onWindowFocus = () => reenterFullscreen();
+        window.addEventListener("focus", onWindowFocus);
+        return () => window.removeEventListener("focus", onWindowFocus);
+    });
 
     let mode = $state<"select" | "edit">("select");
     let rawPhotoUrl = $state<string | null>(null);
@@ -72,6 +90,9 @@
 
                 // Clear the input so selecting the same file triggers again
                 input.value = "";
+
+                // Re-enter fullscreen after returning from camera
+                reenterFullscreen();
             }
         };
 
@@ -82,28 +103,17 @@
 <div class="camera-wrapper">
     {#if mode === "select"}
         <div class="selection-screen">
-            <h3>Comparte tu dibujo</h3>
+            <h3>Sube tu dibujo</h3>
             <div class="selection-container">
                 <label class="select-box">
                     <div class="icon-circle primary-lite">
                         <Camera size={32} />
                     </div>
-                    <span>Cámara</span>
+                    <span>Añadir foto</span>
                     <input
                         type="file"
                         accept="image/*"
                         capture="environment"
-                        onchange={handleFileUpload}
-                    />
-                </label>
-                <label class="select-box">
-                    <div class="icon-circle primary-lite">
-                        <Upload size={32} />
-                    </div>
-                    <span>Subir foto</span>
-                    <input
-                        type="file"
-                        accept="image/*"
                         onchange={handleFileUpload}
                     />
                 </label>
@@ -197,11 +207,10 @@
 
     .selection-container {
         display: flex;
-        gap: 1rem;
         justify-content: center;
         margin-top: 1.5rem;
         width: 100%;
-        max-width: 400px;
+        max-width: 200px;
     }
 
     .select-box {
