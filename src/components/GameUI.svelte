@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { onDestroy } from "svelte";
     import { gameState } from "../lib/game.svelte";
     import CameraCapture from "./CameraCapture.svelte";
     import {
@@ -13,7 +14,53 @@
     } from "lucide-svelte";
     import type { GameItem, Player } from "../lib/types";
 
+    const CHANGE_WORD_TIMEOUT = 10;
+
     let changeWordCount = $state(0);
+    let changeWordTimer = $state(0);
+    let changeWordTimedOut = $state(false);
+    let timerStarted = $state(false);
+    let timerHandle: ReturnType<typeof setInterval> | null = null;
+
+    let timerPercent = $derived((changeWordTimer / CHANGE_WORD_TIMEOUT) * 100);
+    let shouldShowChangeWord = $derived(
+        game?.current_turn === 1 && changeWordCount < 2 && !changeWordTimedOut,
+    );
+
+    function startTimer() {
+        changeWordTimer = CHANGE_WORD_TIMEOUT;
+        if (timerHandle) clearInterval(timerHandle);
+        timerHandle = setInterval(() => {
+            changeWordTimer = Math.max(0, changeWordTimer - 0.1);
+            if (changeWordTimer <= 0) {
+                changeWordTimedOut = true;
+                if (timerHandle) {
+                    clearInterval(timerHandle);
+                    timerHandle = null;
+                }
+            }
+        }, 100);
+    }
+
+    $effect(() => {
+        if (shouldShowChangeWord) {
+            if (!timerStarted) {
+                timerStarted = true;
+                startTimer();
+            }
+        } else {
+            timerStarted = false;
+            changeWordTimer = 0;
+            if (timerHandle) {
+                clearInterval(timerHandle);
+                timerHandle = null;
+            }
+        }
+    });
+
+    onDestroy(() => {
+        if (timerHandle) clearInterval(timerHandle);
+    });
     let showZoom = $state(false);
     let showPlayersModal = $state(false);
     let copiedPlayerId = $state<string | null>(null);
@@ -172,19 +219,31 @@
                             Dibuja esto:
                         </p>
                         <p class="word-to-draw">"{previousItem.content}"</p>
-                        {#if game?.current_turn === 1 && changeWordCount < 2}
-                            <button
-                                class="secondary mt-2"
-                                onclick={() => {
-                                    changeWordCount++;
-                                    gameState.changeInitialWord(
-                                        previousItem!.id,
-                                    );
-                                }}
-                            >
-                                <RefreshCw size={16} class="inline-icon" /> Cambiar
-                                palabra ({2 - changeWordCount} restantes)
-                            </button>
+                        {#if shouldShowChangeWord}
+                            <div class="change-word-wrapper">
+                                <button
+                                    class="secondary mt-2 change-word-btn"
+                                    class:timing={changeWordTimer > 0}
+                                    onclick={() => {
+                                        changeWordCount++;
+                                        gameState.changeInitialWord(
+                                            previousItem!.id,
+                                        );
+                                        startTimer();
+                                    }}
+                                >
+                                    <RefreshCw size={16} class="inline-icon" /> Cambiar
+                                    palabra ({2 - changeWordCount} restantes)
+                                </button>
+                                {#if changeWordTimer > 0}
+                                    <div class="timer-bar">
+                                        <div
+                                            class="timer-bar-fill"
+                                            style="width: {timerPercent}%"
+                                        ></div>
+                                    </div>
+                                {/if}
+                            </div>
                         {/if}
                     </div>
                 {:else if previousItem?.type === "drawing"}
@@ -546,5 +605,35 @@
     }
     .copy-btn:hover {
         background: rgba(255, 255, 255, 0.1);
+    }
+
+    .change-word-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .change-word-btn {
+        transition:
+            background-color 0.3s,
+            border-color 0.3s;
+    }
+    .change-word-btn.timing {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+    .timer-bar {
+        width: 100%;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        margin-top: 0.5rem;
+        overflow: hidden;
+    }
+    .timer-bar-fill {
+        height: 100%;
+        background: var(--primary);
+        border-radius: 2px;
+        transition: width 0.1s linear;
     }
 </style>
