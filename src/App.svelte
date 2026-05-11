@@ -30,15 +30,6 @@
     document.addEventListener("fullscreenchange", onFsChange);
     document.addEventListener("webkitfullscreenchange", onFsChange);
 
-    // Request fullscreen on first user interaction
-    const onFirstTouch = () => {
-      enterFullscreen();
-      document.removeEventListener("touchstart", onFirstTouch);
-      document.removeEventListener("click", onFirstTouch);
-    };
-    document.addEventListener("touchstart", onFirstTouch, { once: true });
-    document.addEventListener("click", onFirstTouch, { once: true });
-
     if (isWordRoute) return;
 
     // Try to reconnect
@@ -93,7 +84,7 @@
     title="Pantalla completa"
     aria-label="Pantalla completa"
   >
-    <Maximize2 size={18} />
+    <Maximize2 size={14} />
   </button>
 {/if}
 
@@ -107,28 +98,25 @@
 
   .fullscreen-btn {
     position: fixed;
-    bottom: 1rem;
-    right: 1rem;
+    top: 0.5rem;
+    right: 0.5rem;
     z-index: 9999;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
+    background: transparent;
+    border: none;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     color: var(--text-muted);
-    padding: 0;
-    transition: all 0.2s;
-    opacity: 0.5;
+    padding: 0.25rem;
+    transition: color 0.2s;
+    opacity: 0.35;
+    width: 28px;
+    height: 28px;
   }
 
   .fullscreen-btn:hover {
-    opacity: 1;
-    background: rgba(255, 255, 255, 0.2);
+    opacity: 0.8;
     color: var(--text-main);
   }
 </style>

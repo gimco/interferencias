@@ -8,27 +8,8 @@
     } from "lucide-svelte";
     import Cropper from "cropperjs";
     import "cropperjs/dist/cropper.css";
-    import { onMount } from "svelte";
-
-    function reenterFullscreen() {
-        const el = document.documentElement;
-        if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
-            if (el.requestFullscreen) {
-                el.requestFullscreen().catch(() => {});
-            } else if ((el as any).webkitRequestFullscreen) {
-                (el as any).webkitRequestFullscreen();
-            }
-        }
-    }
 
     let { onSubmit } = $props<{ onSubmit: (dataUrl: string) => void }>();
-
-    onMount(() => {
-        // Re-enter fullscreen when returning from the camera app
-        const onWindowFocus = () => reenterFullscreen();
-        window.addEventListener("focus", onWindowFocus);
-        return () => window.removeEventListener("focus", onWindowFocus);
-    });
 
     let mode = $state<"select" | "edit">("select");
     let rawPhotoUrl = $state<string | null>(null);
@@ -90,9 +71,6 @@
 
                 // Clear the input so selecting the same file triggers again
                 input.value = "";
-
-                // Re-enter fullscreen after returning from camera
-                reenterFullscreen();
             }
         };
 
